@@ -1,0 +1,13 @@
+Build.PL
+Changes
+MANIFEST
+README
+lib/iPlant/FoundationalAPI.pm
+lib/iPlant/FoundationalAPI/Apps.pm
+lib/iPlant/FoundationalAPI/Auth.pm
+lib/iPlant/FoundationalAPI/Data.pm
+lib/iPlant/FoundationalAPI/IO.pm
+lib/iPlant/FoundationalAPI/Job.pm
+t/00-load.t
+t/pod-coverage.t
+t/pod.t

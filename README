@@ -1,0 +1,36 @@
+iPlant-FoundationalAPI
+
+The README is used to introduce the module and provide instructions on
+how to install the module, any machine dependencies it may have (for
+example C compilers and installed libraries) and any other information
+that should be provided before the module is installed.
+
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+	perl Build.PL
+	./Build
+	./Build test
+	./Build install
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc iPlant::FoundationalAPI
+	
+	export IPLANT_USERNAME=iplant_username IPLANT_PASSWORD=iplant_token/iplant_password
+	perl scripts/test1.pl
+
+You can also look for information at:
+
+    RT, CPAN's request tracker
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=iPlant-FoundationalAPI
+
+    iPlant's Wiki documentation page
+        https://pods.iplantcollaborative.org/wiki/display/docs/Foundational+API+v1.0
+
+

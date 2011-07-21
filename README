@@ -1,5 +1,8 @@
 iPlant-FoundationalAPI
 
+Inspired by Matt W. Vaughn's work iPlantFoundationAPIAdapter found at
+https://github.com/mwvaughn/iPlantFoundationAPIAdapter
+
 The README is used to introduce the module and provide instructions on
 how to install the module, any machine dependencies it may have (for
 example C compilers and installed libraries) and any other information
@@ -23,7 +26,7 @@ perldoc command.
     perldoc iPlant::FoundationalAPI
 	
 	export IPLANT_USERNAME=iplant_username IPLANT_PASSWORD=iplant_token/iplant_password
-	perl scripts/test1.pl
+	perl scripts/test.pl
 
 You can also look for information at:
 

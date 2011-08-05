@@ -6,6 +6,8 @@ use strict;
 use iPlant::FoundationalAPI::Constants ':all';
 use base qw/iPlant::FoundationalAPI::Base/;
 
+use iPlant::FoundationalAPI::Object::Application ();
+
 =head1 NAME
 
 iPlant::FoundationalAPI::Apps - The great new iPlant::FoundationalAPI::Apps!
@@ -38,24 +40,35 @@ Perhaps a little code snippet.
 
 # retrieve a list of the available applications
 sub list {
-	my ($self, $use_formating) = @_;
+	my ($self) = @_;
 
 	my $list = $self->do_get('/list');
 
 
-	if ($use_formating) {
-		my @l = map { $_->{id} } @$list;
-		return \@l;
-	}
+# 	if ($use_formating) {
+# 		my @l = map { $_->{id} } @$list;
+# 		return \@l;
+# 	}
 
-	return $list;
+	my @applications =  $list != -1 && @$list ? ( map { new iPlant::FoundationalAPI::Object::Application($_) } @$list) : ();
+	#use Data::Dumper;
+	#print STDERR Dumper( \@applications), $/;
+	wantarray ? @applications : \@applications;
 }
 
-=head2 function2
+=head2 load
 
 =cut
 
-sub function2 {
+sub find_by_name {
+	my ($self, $name) = @_;
+	my @applications = ();
+
+	if ($name) {
+		my $list = $self->do_get('/name/' . $name);
+		@applications =  @$list ? ( map { new iPlant::FoundationalAPI::Object::Application($_) } @$list) : ();
+	}
+	wantarray ? @applications : \@applications;
 }
 
 =head1 AUTHOR

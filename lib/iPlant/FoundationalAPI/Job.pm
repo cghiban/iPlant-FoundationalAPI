@@ -3,6 +3,13 @@ package iPlant::FoundationalAPI::Job;
 use warnings;
 use strict;
 
+use iPlant::FoundationalAPI::Constants ':all';
+use base qw/iPlant::FoundationalAPI::Base/;
+
+use iPlant::FoundationalAPI::Object::Job ();
+
+use Data::Dumper;
+
 =head1 NAME
 
 iPlant::FoundationalAPI::Job - The great new iPlant::FoundationalAPI::Job!
@@ -27,26 +34,121 @@ Perhaps a little code snippet.
     my $foo = iPlant::FoundationalAPI::Job->new();
     ...
 
-=head1 EXPORT
+=head1 METHODS
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+=head2 submit_job
 
-=head1 FUNCTIONS
+    Submits a request to run a jobs.
+	Returns a Job object.
 
-=head2 function1
-
-=cut
-
-sub function1 {
-}
-
-=head2 function2
+	$apps = $api_instance->apps;
+	$job = $api_instance->job;
+	($ap) = $apps->find_by_name("name"); #iPlant::FoundationalAPI::Object::Application
+	$job->submit_job($ap, %arguments)
 
 =cut
 
-sub function2 {
+sub submit_job {
+	my ($self, $application, %params) = @_;
+
+	#print STDERR  '$application: ', $application, $/;
+	#print STDERR  'ref $application: ', ref $application, $/;
+	unless ($application && ref($application) =~ /::Application/) {
+		print STDERR  "::submit_job: Invalid argument. Expecting Application object", $/;
+		return kExitError;
+	}
+
+
+	my %required_options = ();
+	my %available_options = ();
+
+	my %post_content = (
+		#application => $application->id,
+			softwareName => $application->id,
+			jobName => delete $params{jobName} || 'Job for ' . $application->id,
+			requestedTime => delete $params{requestedTime} || '0:10:00',
+			processors => delete $params{processors} || 1,
+			archive => 'true',
+			#archivePath => '/' . $self->user . '/analyses/',
+		);
+
+
+	for my $opt_group (qw/inputs outputs parameters/) {
+		for my $opt ($application->$opt_group) {
+			#print STDERR Dumper( $opt ), $/;
+			print STDERR  "** ", $opt->{id}, ' = ', defined $opt->{required} ? $opt->{required} : '', $/;
+			$available_options{$opt->{id}} = $opt;
+			if (defined $params{$opt->{id}}) {
+				$post_content{ $opt->{id} } = $params{$opt->{id}};
+			}
+			elsif (defined $opt->{required} && $opt->{required}) {
+				$required_options{$opt->{id}} = $opt_group;
+			}
+		}
+	}
+
+	if (%required_options) {
+		print STDERR  "Missing required argument(s):", $/;
+		for (keys %required_options) {
+			print STDERR "\t", $_, ' in ', $required_options{$_}, "\n";
+		}
+		return kExitError;
+	}
+
+	my $resp = $self->do_post('/', %post_content);
+	if ($resp != kExitError) {
+		return $resp;
+	}
+	return kExitError;
 }
+
+=head2 job_details
+
+=cut
+
+sub job_details {
+	my ($self, $job_id) = @_;
+
+	$self->do_get('/' . $job_id);
+}
+
+=head2 jobs
+
+=cut
+
+sub jobs {
+	my ($self) = @_;
+
+	$self->do_get('s/list');
+}
+
+
+=head2 delete_job
+
+    Kills a running job identified by <id> and removes it from history
+
+=cut
+
+sub delete_job {
+	my ($self, $job_id) = @_;
+
+	my $st = $self->do_delete('/' . $job_id);
+
+	return 1 if ($st != 1);
+	return;
+}
+
+=head2 input
+
+=cut
+
+sub input {
+	my ($self, $job_id) = @_;
+
+	$self->do_get('/' . $job_id . '/input');
+}
+
+
 
 =head1 AUTHOR
 
@@ -65,31 +167,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc iPlant::FoundationalAPI::Job
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=iPlant-FoundationalAPI>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/iPlant-FoundationalAPI>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/iPlant-FoundationalAPI>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/iPlant-FoundationalAPI/>
-
-=back
-
+    perldoc iPlant::FoundationalAPI
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -97,13 +175,6 @@ L<http://search.cpan.org/dist/iPlant-FoundationalAPI/>
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2011 Cornel Ghiban.
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
-
 
 =cut
 

@@ -89,5 +89,10 @@ sub is_folder {
 	return $self->type eq 'dir';
 }
 
+sub TO_JSON {
+	my $self = shift;
+	return { map {$_ => $self->{$_}} keys %$self};
+}
+
 
 1; # End of iPlant::FoundationalAPI::Object::File

@@ -1,7 +1,5 @@
 package iPlant::FoundationalAPI::Object::Application;
 
-
-use JSON::XS ();
 use overload '""' => sub { $_[0]->id; };
 
 =head1 NAME

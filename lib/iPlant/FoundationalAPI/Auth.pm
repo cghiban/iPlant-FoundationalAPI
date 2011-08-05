@@ -118,7 +118,7 @@ sub auth_post_token {
 	
 	# Retrieve a token in user mode
 	my $self = shift;
-		
+
 	my $ua = $self->_setup_user_agent;
 	$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->password) );
 	
@@ -145,6 +145,12 @@ sub auth_post_token {
 		return undef;
 	}
 
+}
+
+
+sub token_expiration {
+	my ($self) = shift;
+	return $self->{token_expires};
 }
 
 

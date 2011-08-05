@@ -20,14 +20,9 @@ use HTTP::Request::Common qw(POST);
 use URI::Escape;
 # For handling the JSON that comes back from iPlant services
 use JSON::XS;
-# A special option handler that can be dynamically configured
-# It relies on GetOpt::Long, but I configure that dependency
-# to pass through non-recognized options.
-use Getopt::Long::Descriptive;
-use Getopt::Long qw(:config pass_through);
 # Used for exporting complex data structures to text. Mainly used here 
 # for debugging. May be removed as a dependency later
-use YAML qw(Dump);
+#use YAML qw(Dump);
 use MIME::Base64 qw(encode_base64);
 
 use constant kMaximumSleepSeconds => 600; # 10 min
@@ -62,6 +57,7 @@ my %end_point = (
 		io => $IO_END,
 		data => $DATA_END,
 		apps => $APPS_END,
+		job => $JOB_END,
 	);
 
 
@@ -81,9 +77,9 @@ sub do_get {
 	my ($self, $path, %params) = @_;
 
 	my $END_POINT = $self->_get_end_point;
-	print STDERR  $END_POINT, $/;
+	print STDERR  $END_POINT, $/ if $self->debug;
 	unless ($END_POINT) {
-		print STDERR  "Invalid request. ", $/;
+		print STDERR "::do_get: invalid request: ", $self, $/;
 		return kExitError;
 	}
 	#print $END_POINT, $/;
@@ -93,13 +89,13 @@ sub do_get {
 		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;
 		return kExitError;
 	}
-	print STDERR  "Path: ", $path, $/;
+	print STDERR  "::do_get: path: ", $path, $/ if $self->debug;
 
 	my $ua = _setup_user_agent($self);
 	my $req = HTTP::Request->new(GET => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
 	my $res = $ua->request($req);
 	
-	print "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
+	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	
 	# Parse response
 	my $message;
@@ -119,6 +115,7 @@ sub do_get {
 	}
 	else {
 		print STDERR $res->status_line, "\n";
+		print STDERR $req->content, "\n" if $self->debug;
 		return kExitError;
 	}
 }
@@ -206,15 +203,16 @@ sub do_delete {
 		$message = $res->content;
 		print STDERR $message, "\n" if $self->debug;
 
-		# TODO - make sure we've got a json string
-
 		my $json = JSON::XS->new->allow_nonref;
-		$mref = $json->decode( $message );
-		#return kExitOK;
+		$mref = eval { $json->decode( $message ); };
+		if ($mref && $mref->{status} eq 'success') {
+			return 1;
+		}
 		return $mref;
 	}
 	else {
 		print STDERR $res->status_line, "\n";
+		print STDERR $res->content, $/ if $self->debug;
 		return kExitError;
 	}
 }
@@ -236,24 +234,25 @@ sub do_post {
 		return kExitError;
 	}
 
+	$path =~ s'/$'';
+
 	print STDERR '::do_post: ', Dumper( \%params), $/ if $self->debug;
-	my $content = '';
-	while (my ($k, $v) = each %params) {
-		$content .= "$k=$v&";
-	}
+	#my $content = '';
+	#while (my ($k, $v) = each %params) {
+	#	$content .= "$k=$v&";
+	#}
 
 	my $ua = $self->_setup_user_agent;
-	#print STDERR Dumper( $ua), $/;
 	print "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
-	my $req = HTTP::Request->new(POST => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
-	$req->content($content) if $content;
-	my $res = $ua->request($req);
+	my $res = $ua->post(
+				"$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
+				\%params
+			);
 	
 	# Parse response
 	my $message;
 	my $mref;
 	
-	#print STDERR Dumper( $res ), $/;
 	if ($res->is_success) {
 		$message = $res->content;
 		if ($self->debug) {
@@ -261,11 +260,15 @@ sub do_post {
 		}
 		my $json = JSON::XS->new->allow_nonref;
 		$mref = eval {$json->decode( $message );};
-		#return kExitOK;
+		if ($mref && $mref->{status} eq 'success') {
+			return $mref->{result};
+		}
 		return $mref;
 	}
 	else {
-		print STDERR $res->status_line, "\n";
+		#print STDERR Dumper( $res ), $/;
+		print STDERR (caller(0))[3], " ",$res->status_line, "\n";
+		print STDERR  $res->content, $/;
 		return kExitError;
 	}
 }
@@ -275,8 +278,6 @@ sub _setup_user_agent {
 	
 	my $self = shift;
 	my $ua = LWP::UserAgent->new;
-	
-	#print STDERR "\nSetting up UA\n";
 	
 	$ua->agent($AGENT);
 	if (($self->user ne '') and ($self->token ne '')) {

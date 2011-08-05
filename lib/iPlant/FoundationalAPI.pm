@@ -22,6 +22,7 @@ use iPlant::FoundationalAPI::IO ();
 use iPlant::FoundationalAPI::Data ();
 use iPlant::FoundationalAPI::Apps ();
 use iPlant::FoundationalAPI::Auth ();
+use iPlant::FoundationalAPI::Job ();
 
 # Needed to emit the curl-compatible form when DEBUG is enabled
 use URI::Escape;
@@ -38,42 +39,14 @@ Perhaps a little code snippet.
 
     use iPlant::FoundationalAPI;
 
-    my $foo = iPlant::FoundationalAPI->new();
+    my $api = iPlant::FoundationalAPI->new();
     ...
-
-=head1 EXPORT
-
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
 
 =head1 FUNCTIONS
 
 =cut
 
 my @config_files = qw(/etc/iplant.foundationalapi.json ~/.iplant.foundationalapi.json ~/Library/Preferences/iplant.foundationalapi.json ./iplant.foundationalapi.json );
-
-if (0) {
-	
-	# Never subject to configuration
-	my $ZONE = 'iPlant Job Service';
-	my $AGENT = "iPlantRobot/0.1 ";
-
-	# Define API endpoints
-	my $APPS_ROOT = "apps-v1";
-	my $IO_ROOT = "io-v1";
-
-	my $AUTH_ROOT = "auth-v1";
-	my $AUTH_END = $AUTH_ROOT;
-
-	my $APPS_END = "$APPS_ROOT/apps/name";
-	my $APPS_SHARE_END = "$APPS_ROOT/apps/share/name";
-
-	my $JOB_END = "$APPS_ROOT/job";
-	my $JOBS_END = "$APPS_ROOT/jobs";
-
-	my $IO_END = "$IO_ROOT/io/list";
-	my $TRANSPORT = 'https';
-}
 
 =head2 new
 
@@ -175,6 +148,19 @@ sub data {
 sub apps {
 	my $self = shift;
 	return iPlant::FoundationalAPI::Apps->new($self);
+}
+
+sub job {
+	my $self = shift;
+	return iPlant::FoundationalAPI::Job->new($self);
+}
+
+sub token_expiration {
+	my $self = shift;
+	if ($self->{auth}) {
+		return $self->{auth}->token_expiration;
+	}
+	return 0;
 }
 
 =head1 AUTHOR

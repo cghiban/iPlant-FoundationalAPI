@@ -93,6 +93,16 @@ sub parameters {
 	wantarray ? @$p : $p;
 }
 
+sub parallelism {
+	my ($self) = @_;
+	return $self->{parallelism};
+}
+
+# sub details {
+# 	my ($self) = @_;
+# 	return $self->{details};
+# }
+
 sub TO_JSON {
 	my $self = shift;
 	my $href = { map {$_ => $self->{$_}} keys %$self};

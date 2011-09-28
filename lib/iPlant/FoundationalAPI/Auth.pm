@@ -3,6 +3,7 @@ package iPlant::FoundationalAPI::Auth;
 use warnings;
 use strict;
 
+use iPlant::FoundationalAPI::Constants ':all';
 use base 'iPlant::FoundationalAPI::Base';
 use MIME::Base64;
 use Data::Dumper;
@@ -51,7 +52,7 @@ sub new {
 	if ($self->{user} && $self->{password} && !$self->{token}) {
 		# hit auth service for a new token
 		my $newToken = $self->auth_post_token();
-		print "Issued-Token: ", $newToken, "\n" if $self->debug;
+		print STDERR "Issued-Token: ", $newToken, "\n" if $self->debug;
 		$self->{token} = $newToken;
 		delete $self->{password};
 	}
@@ -83,7 +84,7 @@ sub _configure_auth_from_opt {
 				
 		# hit auth service for a new token
 		my $newToken = $self->auth_post_token();
-		print "Issued-Token: ", $newToken, "\n";
+		print STDERR "Issued-Token: ", $newToken, "\n";
 		
 		$self->password(undef);
 		# set global.token
@@ -134,11 +135,20 @@ sub auth_post_token {
 				
 	if ($res->is_success) {
 		$message = $res->content;
-		#print $message, $/;
-		$mref = $json->decode( $message );
-		if (defined($mref->{'result'}->{'token'})) {
-			$self->{token_expires} = $mref->{'result'}->{expires};
-			return $mref->{'result'}->{'token'};
+		$mref = eval {$json->decode( $message );};
+		if ($mref) {
+			if ($mref->{status} eq 'success' && defined($mref->{'result'}->{'token'})) {
+				$self->{token_expires} = $mref->{'result'}->{expires};
+				return $mref->{'result'}->{'token'};
+			}
+			else {
+				print STDERR  $mref->{'status'}, ": ", $mref->{'message'}, $/;
+				return kExitError;
+			}
+		}
+		else {
+			print STDERR  $message, $/;
+			return kExitError;
 		}
 	} else {
 		print STDERR (caller(0))[3], " ", $res->status_line, "\n";

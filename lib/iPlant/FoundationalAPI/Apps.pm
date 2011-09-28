@@ -42,17 +42,14 @@ Perhaps a little code snippet.
 sub list {
 	my ($self) = @_;
 
-	my $list = $self->do_get('/list');
+	my @applications = ();
+	for (qw|/list /share/list|) {
+		my $list = $self->do_get($_);
+		if ($list != kExitError && 'ARRAY' eq ref $list) {
+			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
+		}
+	}
 
-
-# 	if ($use_formating) {
-# 		my @l = map { $_->{id} } @$list;
-# 		return \@l;
-# 	}
-
-	my @applications =  $list != -1 && @$list ? ( map { new iPlant::FoundationalAPI::Object::Application($_) } @$list) : ();
-	#use Data::Dumper;
-	#print STDERR Dumper( \@applications), $/;
 	wantarray ? @applications : \@applications;
 }
 
@@ -65,8 +62,12 @@ sub find_by_name {
 	my @applications = ();
 
 	if ($name) {
-		my $list = $self->do_get('/name/' . $name);
-		@applications =  @$list ? ( map { new iPlant::FoundationalAPI::Object::Application($_) } @$list) : ();
+		for my $ep (qw|/name /share/name|) {
+			my $list = $self->do_get($ep . '/' . $name);
+			if ($list != kExitError && 'ARRAY' eq ref $list) {
+				push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
+			}
+		}
 	}
 	wantarray ? @applications : \@applications;
 }

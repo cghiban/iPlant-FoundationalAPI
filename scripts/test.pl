@@ -39,6 +39,10 @@ my $api_instance = iPlant::FoundationalAPI->new(
 my $api_instance = iPlant::FoundationalAPI->new;
 $api_instance->debug(0);
 
+if ($api_instance->token eq kExitError) {
+	print STDERR "Can't authenticate!" , $/;
+	exit 1;
+}
 print "Token: ", $api_instance->token, "\n";
 
 my $base_dir = '/' . $api_instance->user;
@@ -46,6 +50,7 @@ print "Working in [", $base_dir, "]", $/;
 
 my ($st, $dir_contents_href);
 
+__END__
 
 #-----------------------------
 # IO
@@ -75,7 +80,7 @@ if (0) {
 
 	$st = $io->remove($base_dir . '/' . $new_dir_renamed);
 
-	$st = $io->upload($base_dir, fileType =>'FASTA-0', fileToUpload => "$Bin/../t/A.fasta", fileName => "A.fa");
+	$st = $io->upload($base_dir, fileType =>'FASTA-0', fileToUpload => "$Bin/../t/A.fasta", fileName => "Bx.fa");
 	print STDERR 'upload status: ', Dumper( $st ), $/;
 
 	$dir_contents_href = $io->readdir($base_dir), $/;
@@ -96,31 +101,31 @@ if (0) {
 #
 
 my $ap_wc;
-if (0) {
-my $apps = $api_instance->apps;
- my @list = $apps->list;
- print "\nAvailable applications:\n";
- for my $ap (@list) {
- 	print "\t", $ap, "  (", $ap->shortDescription, ")\n";
- }
-print "\nLooking for applications 'wc':\n";
-($ap_wc) = $apps->find_by_name("wc");
-if ($ap_wc) {
-	#print STDERR Dumper( $ap_wc), $/;
-	print "\nFound [", $ap_wc, "] - ", lc $ap_wc->shortDescription, $/;
+if (1) {
+	$api_instance->debug(0);
+	my $apps = $api_instance->apps;
+	my @list = $apps->list;
+	print "\nAvailable applications:\n";
+	for my $ap (@list) {
+		print "\t", $ap, "  (", $ap->shortDescription, ")\n";
+	}
+	print "\nLooking for applications 'wc':\n";
+	($ap_wc) = $apps->find_by_name("wc");
+	if ($ap_wc) {
+		#print STDERR Dumper( $ap_wc), $/;
+		print "\nFound [", $ap_wc, "] - ", lc $ap_wc->shortDescription, $/;
 
-	print "\tInputs: \n";
-	print "\t\t", $_->{id}, " - ", $_->{label} for ($ap_wc->inputs);
-	print "\n\tParams: \n";
-	print "\t\t", $_->{id}, " - ", $_->{label} for ($ap_wc->parameters);
-	print "\n";
-}
-else {
-	print "\t No application found with name 'wc'\n";
-}
+		print "\tInputs: \n";
+		print "\t\t", $_->{id}, " - ", $_->{label} for ($ap_wc->inputs);
+		print "\n\tParams: \n";
+		print "\t\t", $_->{id}, " - ", $_->{label} for ($ap_wc->parameters);
+		print "\n";
+	}
+	else {
+		print "\t No application found with name 'wc'\n";
+	}
 
 }
-
 
 #--------------------------
 # JOB

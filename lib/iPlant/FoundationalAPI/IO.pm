@@ -136,13 +136,29 @@ sub move {
 
 =head2 stream_file
 
+	TODO - can it handle large files?
+		- should it store data in tmp files and when done, assemble the final product?
+		- should we pass it a file/filehadle to write data into?
+
 =cut
 
 
 sub stream_file {
-	my ($self, $path) = @_;
+	my ($self, $path, %params) = @_;
 
-	print STDERR  "::IO::stream_file: Not implemented", $/;
+	#print STDERR  "::IO::stream_file: Not implemented", $/;
+	# Check for the requested path to be renamed
+	unless (defined($path)) {
+		print STDERR "::IO::rename Please specify a path which you want renamed\n";
+		return;
+	}
+
+	# TODO - make limit_size = 1024 by default - why?
+	#unless (defined $params)
+
+	my $buffer = $self->do_get($path, %params);
+
+	return $buffer if ($buffer ne kExitError);
 }
 
 =head2 upload
@@ -178,7 +194,7 @@ sub upload {
 	
 
 	my $ua = $self->_setup_user_agent;
-	print "\nhttps://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
+	print STDERR "\nhttps://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
  	my $res = $ua->request(
 			POST "https://" . $self->hostname . "/" . $END_POINT . $path,
 			'Content_Type' => 'form-data',

@@ -92,8 +92,30 @@ sub do_get {
 	print STDERR  "::do_get: path: ", $path, $/ if $self->debug;
 
 	my $ua = _setup_user_agent($self);
-	my $req = HTTP::Request->new(GET => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
-	my $res = $ua->request($req);
+	my ($req, $res);
+
+	if (defined $params{limit_size}) {
+
+		my $data;
+
+		$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
+						':read_size_hint' => $params{limit_size} > 0 ? $params{limit_size} : undef,
+						':content_cb' => sub {my ($d)= @_; $data = $d; die();},
+					);
+		if ($res->is_success) {
+			return $data;
+		}
+		else {
+			print STDERR $res->status_line, "\n" if $self->debug;
+			print STDERR $req->content, "\n" if $self->debug;
+		
+			return kExitError;
+		}
+	}
+	else {
+		$req = HTTP::Request->new(GET => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
+		$res = $ua->request($req);
+	}
 	
 	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	
@@ -114,7 +136,7 @@ sub do_get {
 		return $mref->{result};
 	}
 	else {
-		print STDERR $res->status_line, "\n";
+		print STDERR $res->status_line, "\n" if $self->debug;
 		print STDERR $req->content, "\n" if $self->debug;
 		return kExitError;
 	}
@@ -146,7 +168,7 @@ sub do_put {
 
 	my $ua = _setup_user_agent($self);
 	#print STDERR Dumper( $ua), $/;
-	print "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
+	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	my $req = HTTP::Request->new(PUT => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
 	$req->content($content) if $content;
 	my $res = $ua->request($req);
@@ -193,7 +215,7 @@ sub do_delete {
 	my $req = HTTP::Request->new(DELETE => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
 	my $res = $ua->request($req);
 	
-	print "\nDELETE => $TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
+	print STDERR "\nDELETE => $TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	
 	# Parse response
 	my $message;
@@ -243,7 +265,7 @@ sub do_post {
 	#}
 
 	my $ua = $self->_setup_user_agent;
-	print "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
+	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	my $res = $ua->post(
 				"$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
 				\%params

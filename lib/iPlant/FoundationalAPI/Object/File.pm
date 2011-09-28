@@ -49,6 +49,11 @@ sub new {
 	return $self;
 }
 
+sub owner {
+	my ($self) = @_;
+	return $self->{owner};
+}
+
 sub name {
 	my ($self) = @_;
 	return $self->{name};

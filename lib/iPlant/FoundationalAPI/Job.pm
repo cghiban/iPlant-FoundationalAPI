@@ -68,15 +68,14 @@ sub submit_job {
 			jobName => delete $params{jobName} || 'Job for ' . $application->id,
 			requestedTime => delete $params{requestedTime} || '0:10:00',
 			processors => delete $params{processors} || 1,
-			archive => 'true',
+			archive => delete $params{archive} || 'false',
 			#archivePath => '/' . $self->user . '/analyses/',
 		);
 
 
 	for my $opt_group (qw/inputs outputs parameters/) {
 		for my $opt ($application->$opt_group) {
-			#print STDERR Dumper( $opt ), $/;
-			print STDERR  "** ", $opt->{id}, ' = ', defined $opt->{required} ? $opt->{required} : '', $/;
+			#print STDERR  "** ", $opt->{id}, ' = ', defined $opt->{required} ? $opt->{required} : '', $/;
 			$available_options{$opt->{id}} = $opt;
 			if (defined $params{$opt->{id}}) {
 				$post_content{ $opt->{id} } = $params{$opt->{id}};
@@ -110,6 +109,12 @@ sub job_details {
 	my ($self, $job_id) = @_;
 
 	$self->do_get('/' . $job_id);
+}
+
+sub job_output_files {
+	my ($self, $job_id) = @_;
+
+	$self->do_get('/' . $job_id . '/output/list');
 }
 
 =head2 jobs

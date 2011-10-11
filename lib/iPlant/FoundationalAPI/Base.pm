@@ -63,6 +63,7 @@ sub run_time {
 sub debug {
 	my $self = shift;
 	if (@_) { $self->{debug} = shift }
+	#print STDERR  "DEBUG..: ", $self->{debug} || 0, $/;
 	return $self->{debug};
 }
 

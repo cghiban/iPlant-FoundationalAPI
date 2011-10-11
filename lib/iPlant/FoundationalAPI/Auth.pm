@@ -6,6 +6,7 @@ use strict;
 use iPlant::FoundationalAPI::Constants ':all';
 use base 'iPlant::FoundationalAPI::Base';
 use MIME::Base64;
+use Carp qw/carp/;
 use Data::Dumper;
 
 =head1 NAME
@@ -44,7 +45,7 @@ sub new {
 	my ($proto, $args) = @_;
 	my $class = ref($proto) || $proto;
 	
-	my $self  = { map {$_ => $args->{$_}} grep {/(?:user|token|password|hostname|debug)/} keys %$args};
+	my $self  = { map {$_ => $args->{$_}} grep {/(?:user|token|password|hostname|lifetime|debug)/} keys %$args};
 	
 	
 	bless($self, $class);
@@ -56,56 +57,17 @@ sub new {
 		$self->{token} = $newToken;
 		delete $self->{password};
 	}
-	
-	return $self;
-}
-
-=head2 function2
-
-=cut
-
-sub _configure_auth_from_opt {
-	
-	# Allows user to specify username/password (unencrypted)
-	# Uses this info to hit the auth-v1 endpoint
-	# fetch a token and cache it as the global token
-	# for this instance of the application
-	
-	my ($self, $opt1) = @_;
-	
-	if ($opt1->user and $opt1->password and not $opt1->token) {
-	
-		if ($self->debug) {
-			print STDERR (caller(0))[3], ": Username/password authentication selected\n";
+	elsif ($self->{user} && $self->{token}) {
+		unless ($self->is_token_valid) {
+			carp "Authentication failed...\n";
+			return;
 		}
-		# set global.user global.password
-		$self->user( $opt1->{'user'} );
-		$self->password( $opt1->{'password'} );
-				
-		# hit auth service for a new token
-		my $newToken = $self->auth_post_token();
-		print STDERR "Issued-Token: ", $newToken, "\n";
-		
-		$self->password(undef);
-		# set global.token
-		$self->token( $newToken );
-	
-	} elsif ($opt1->user and $opt1->token and not $opt1->password) {
-		
-		if ($self->debug) {
-			print STDERR (caller(0))[3], ": Secure token authentication selected\n";
-		}
-		
-		$self->user( $opt1->user );	
-		$self->token( $opt1->token );
-	
-	} else {
-		if ($self->debug) {
-			print STDERR (caller(0))[3], ": Defaulting to pre-configured values\n";		
+		else {
+			print STDERR  "Token validated successfully", $/ if $self->debug;
 		}
 	}
-	
-	return 1;
+
+	return $self;
 }
 
 sub validate_auth {
@@ -119,6 +81,11 @@ sub auth_post_token {
 	
 	# Retrieve a token in user mode
 	my $self = shift;
+	my $renew = shift;
+
+	if ($renew && $self->{password}) {
+		print STDERR  "Revalidating token...", $/ if $self->debug;
+	}
 
 	my $ua = $self->_setup_user_agent;
 	$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->password) );
@@ -126,13 +93,29 @@ sub auth_post_token {
 	my $auth_ep = $self->_get_end_point;
 	my $url = "https://" . $self->hostname . "/$auth_ep/";
 
+	my $content = [];
+
+	if ($renew) {
+		$url .= "renew";
+		push @$content, token => $self->token;
+	}
+	
+	print STDERR  '..::Auth::auth_post_token: ', $url, $/ if $self->debug;
+
 	my $req = HTTP::Request->new(POST => $url);
+	if ($self->{lifetime}) {
+		push @$content, lifetime => $self->{lifetime};
+	}
+	if (@$content) {
+		print STDERR  "FIXME: see how to submit params.. at ", __LINE__, $/;
+		#$req->content($content);
+	}
 	my $res = $ua->request($req);
 	
 	my $message;
 	my $mref;
 	my $json = JSON::XS->new->allow_nonref;
-				
+
 	if ($res->is_success) {
 		$message = $res->content;
 		$mref = eval {$json->decode( $message );};
@@ -157,6 +140,68 @@ sub auth_post_token {
 
 }
 
+=head2 is_token_valid
+
+  Checks is the token hasn't expired or not.
+  It returns the # of seconds till the expiration of the token.
+  This info can be used to reissue a token or to revalidate the token that
+  will soon expire.
+
+=cut
+
+sub is_token_valid {
+	my ($self) = shift;
+	
+	unless ($self->token_expiration) {
+		carp "Can't tell token expiration...\n" if $self->debug;
+
+		my $ua = $self->_setup_user_agent;
+		$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->password) );
+	
+		my $auth_ep = $self->_get_end_point;
+		my $url = "https://" . $self->hostname . "/$auth_ep/";
+
+		print STDERR  '..::Auth::is_token_valid: ', $url, $/ if $self->debug;
+
+		my $req = HTTP::Request->new(GET => $url);
+		my $res = $ua->request($req);
+	
+		my $message;
+		my $mref;
+		my $json = JSON::XS->new->allow_nonref;
+
+		if ($res->is_success) {
+			$message = $res->content;
+			$mref = eval {$json->decode( $message );};
+			if ($mref) {
+				if ($mref->{status} eq 'success') {
+					return 1;
+				}
+				else {
+					return;
+				}
+			}
+			else {
+				print STDERR  $message, $/;
+				return;
+			}
+		} else {
+			print STDERR (caller(0))[3], " ", $res->status_line, "\n";
+			return;
+		}
+	}
+
+	my $delta = $self->token_expiration - time();
+	print STDERR "DELTA is_token_valid: ", $delta, $/;
+
+	return $delta > 0 ? $delta : 0;
+}
+
+=head2 token_expiration
+
+  Returns the timestamp of when the token will expire, if available.
+
+=cut
 
 sub token_expiration {
 	my ($self) = shift;

@@ -94,14 +94,22 @@ sub do_get {
 	my $ua = _setup_user_agent($self);
 	my ($req, $res);
 
-	if (defined $params{limit_size}) {
+	if (defined $params{limit_size} || defined $params{download}) {
 
 		my $data;
 
-		$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
+		if ($params{download}) {
+			$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
+			if ($res->is_success) {
+				$data = $res->content;
+			}
+		}
+		else {
+			$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
 						':read_size_hint' => $params{limit_size} > 0 ? $params{limit_size} : undef,
 						':content_cb' => sub {my ($d)= @_; $data = $d; die();},
 					);
+		}
 		if ($res->is_success) {
 			return $data;
 		}

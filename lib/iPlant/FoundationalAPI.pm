@@ -113,21 +113,16 @@ sub _auto_config {
 
 }
 
-# sub auth_valid {
-	# my ($self) = @_;
-	# my $auth = $self->auth;
-	# return $auth && $auth->validate_auth;
-# }
 
 sub _init_auth {
 	my ($self) = @_;
 	
-	#unless ($self->{auth}) {
 	my $auth = iPlant::FoundationalAPI::Auth->new($self);
-	$self->{auth} = $auth;
 	if ($auth && $auth->token) {
 		$self->{token} = $auth->token;
+		$auth->debug($self->{debug});
 	}
+	$self->{auth} = $auth;
 }
 
 sub auth {
@@ -161,6 +156,14 @@ sub token_expiration {
 		return $self->{auth}->token_expiration;
 	}
 	return 0;
+}
+
+sub debug {
+	my ($self, $d) = @_;
+	if (defined $d) {
+		$self->{auth} && $self->{auth}->debug($d);
+	}
+	$self->SUPER::debug($d);
 }
 
 =head1 AUTHOR

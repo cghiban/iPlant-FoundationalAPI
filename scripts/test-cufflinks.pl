@@ -69,6 +69,8 @@ my $io = $api_instance->io;
 
 # chech if file exists
 $dir_contents_href = $io->readdir($base_dir . '/' . $file);
+#print STDERR Dumper( $dir_contents_href), $/;
+#__END__
 if (@$dir_contents_href && $dir_contents_href->[0]->is_file) {
 	$input_file = $dir_contents_href->[0];
 }
@@ -83,9 +85,9 @@ else {
 #----------------------------------------------------
 # APPS end point
 my $apps = $api_instance->apps;
-my ($th) = $apps->find_by_name("tophat");
-if ($th) {
-	print STDERR Dumper( $th ), $/;
+my ($cl) = $apps->find_by_name("cufflinks");
+if ($cl) {
+	print STDERR Dumper( $cl ), $/;
 }
 else {
 	print STDERR  "App [tophat] not found!!", $/;
@@ -95,42 +97,46 @@ else {
 #----------------------------------------------------
 # JOBS end point
 my $job_ep = $api_instance->job;
-$job_ep->debug(0);
+$job_ep->debug(1);
 
 my $job_id = 0;
 my %job_arguments = (
-			jobName => 'TH-job40-' . int(rand(100)),
+			jobName => 'CL-job52-' . int(rand(100)),
 			archive => 1,
 			query1 => $input_file->path,
-			genome => '/shared/iplantcollaborative/genomeservices/legacy/0.30/genomes/arabidopsis_thaliana/col-0/v10/genome.fas',
-			annotation => '/shared/iplantcollaborative/genomeservices/legacy/0.30/genomes/arabidopsis_thaliana/col-0/v10/annotation.gtf',
+			BIAS_FASTA => '/shared/iplantcollaborative/genomeservices/legacy/0.30/genomes/arabidopsis_thaliana/col-0/v10/genome.fas',
+			ANNOTATION => '/shared/iplantcollaborative/genomeservices/legacy/0.30/genomes/arabidopsis_thaliana/col-0/v10/annotation.gtf',
 			processors => '1',
-			requestedTime => '1:10:00',
-			softwareName => $th->id,
-			archive => 1,
+			requestedTime => '2:10:00',
+			softwareName => $cl->id,
 
-			'max_insertion_length' => '3',
-			'mate_inner_dist' => '200',
-			'min_intron_length' => '70',
-			'min_anchor_length' => '8',
-			'max_multihits' => '20',
-			'library_type' => 'fr-unstranded',
-			'max_deletion_length' => '3',
-			'splice_mismatches' => '0',
-			'max_intron_length' => '50000',
-			'min_isoform_fraction' => '0.15',
-			'mate_std_dev' => '20',
-			'segment_length' => '20',
+			maxIntronLength => '50',
+			maxBundleLength => '3500000',
+			preMrnaFraction => '0.15',
+			smallAnchorFraction => '0.09',
+			trim3avgcovThresh => '10',
+			trim3dropoffFrac => '10',
+			minIsoformFraction => '0.1',
+			minFragsPerTransfrag => '10',
+			intronOverhangTolerance => '10',
+			libraryType => 'fr-unstranded',
+			minIntronLength => '50',
+			overhangTolerance => '10',
+			overhangTolerance3 => '600',
 		);
 
-my $job = $job_ep->submit_job($th, %job_arguments), $/;
-print STDERR Dumper($job), $/; 
+my $job = $job_ep->submit_job($cl, %job_arguments), $/;
+#print STDERR Dumper($job), $/; 
 if ($job != kExitError) {
 	$job_id = $job->{id};
 	print STDERR  "JOB_ID: ", $job_id, $/;
 }
 else {
 	print STDERR  "Failed to submit job..", $/;
+}
+
+unless ($job_id) {
+	die "Job not submitted..\n";
 }
 
 print STDERR  "Polling for job status..", $/;

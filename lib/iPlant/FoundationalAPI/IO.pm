@@ -61,6 +61,18 @@ sub readdir {
 	return @$list ? [map {iPlant::FoundationalAPI::Object::File->new($_)} @$list] : [];
 }
 
+=head2 ls
+
+	Alias for <readdir>.
+
+=cut
+
+# alias for readdir
+sub ls {
+	my ($self, $path) = @_;
+	$self->readdir($path);
+}
+
 =head2 mkdir
 
 =cut

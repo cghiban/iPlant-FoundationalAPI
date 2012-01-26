@@ -67,6 +67,7 @@ sub new {
 			token => $args{token} || '',
 			credential_class => $args{credential_class} || 'self',
 			auth => undef,
+			debug => defined $args{debug} ? delete $args{debug} : undef,
 	};
 	
 	$self = _auto_config($self) unless %args;

@@ -156,7 +156,7 @@ sub is_token_valid {
 		carp "Can't tell token expiration...\n" if $self->debug;
 
 		my $ua = $self->_setup_user_agent;
-		$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->password) );
+		$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->token) );
 	
 		my $auth_ep = $self->_get_end_point;
 		my $url = "https://" . $self->hostname . "/$auth_ep/";

@@ -267,13 +267,10 @@ sub do_post {
 	$path =~ s'/$'';
 
 	print STDERR '::do_post: ', Dumper( \%params), $/ if $self->debug;
-	#my $content = '';
-	#while (my ($k, $v) = each %params) {
-	#	$content .= "$k=$v&";
-	#}
+	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" 
 
+		if $self->debug;
 	my $ua = $self->_setup_user_agent;
-	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	my $res = $ua->post(
 				"$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
 				\%params
@@ -283,12 +280,12 @@ sub do_post {
 	my $message;
 	my $mref;
 	
+	my $json = JSON::XS->new->allow_nonref;
 	if ($res->is_success) {
 		$message = $res->content;
 		if ($self->debug) {
 			print STDERR $message, "\n";
 		}
-		my $json = JSON::XS->new->allow_nonref;
 		$mref = eval {$json->decode( $message );};
 		if ($mref && $mref->{status} eq 'success') {
 			return $mref->{result};
@@ -297,9 +294,16 @@ sub do_post {
 	}
 	else {
 		#print STDERR Dumper( $res ), $/;
-		print STDERR (caller(0))[3], " ",$res->status_line, "\n";
-		print STDERR  $res->content, $/;
-		return kExitError;
+		print STDERR "Status line: ", (caller(0))[3], " ", $res->status_line, "\n";
+		my $content = $res->content;
+		print STDERR "Content: ", $content, $/;
+		if ($content =~ /"status":/) {
+			$mref = eval {$json->decode( $content );};
+			if ($mref && $mref->{status}) {
+				return {status => "error", message => $mref->{message} || $res->status_line};
+			}
+		}
+		return {status => "error", message => $res->status_line};
 	}
 }
 

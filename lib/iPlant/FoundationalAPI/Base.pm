@@ -68,4 +68,10 @@ sub debug {
 }
 
 
+sub _error {
+	my ($self, $msg, $data) = @_;
+
+	{ status => 'error', message => $msg, data => $data }
+}
+
 1;

@@ -20,7 +20,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 =head1 SYNOPSIS
@@ -38,8 +38,9 @@ Perhaps a little code snippet.
 
 =head2 submit_job
 
-    Submits a request to run a jobs.
-	Returns a Job object.
+    Submits a request to run a job.
+    Returns a hashref: {status => [success|fail], message => '..', data => $job}
+    where $job is a Job object.
 
 	$apps = $api_instance->apps;
 	$job = $api_instance->job;
@@ -55,7 +56,7 @@ sub submit_job {
 	#print STDERR  'ref $application: ', ref $application, $/;
 	unless ($application && ref($application) =~ /::Application/) {
 		print STDERR  "::submit_job: Invalid argument. Expecting Application object", $/;
-		return kExitError;
+		return $self->_error("Invalid argument. Expecting Application object.");
 	}
 
 
@@ -63,11 +64,11 @@ sub submit_job {
 	my %available_options = ();
 
 	my %post_content = (
-		#application => $application->id,
 			softwareName => $application->id,
 			jobName => delete $params{jobName} || 'Job for ' . $application->id,
 			requestedTime => delete $params{requestedTime} || '0:10:00',
 			processors => delete $params{processors} || 1,
+			memory => delete $params{memory} || '',
 			archive => delete $params{archive} || 'false',
 			#archivePath => '/' . $self->user . '/analyses/',
 		);
@@ -75,9 +76,12 @@ sub submit_job {
 
 	for my $opt_group (qw/inputs outputs parameters/) {
 		for my $opt ($application->$opt_group) {
-			#print STDERR  "** ", $opt->{id}, ' = ', defined $opt->{required} ? $opt->{required} : '', $/;
-			$available_options{$opt->{id}} = $opt;
-			if (defined $params{$opt->{id}}) {
+			#print STDERR  "  ** ", $opt->{id}, 
+			#	"\tr:", defined $opt->{required} ? $opt->{required} : '',
+			#	"\tv:", defined $opt->{validator} ? $opt->{validator} : '',
+			#	$/;
+			#$available_options{$opt->{id}} = $opt;
+			if (defined $params{$opt->{id}} && $params{$opt->{id}} ne "") {
 				$post_content{ $opt->{id} } = $params{$opt->{id}};
 			}
 			elsif (defined $opt->{required} && $opt->{required}) {
@@ -87,18 +91,20 @@ sub submit_job {
 	}
 
 	if (%required_options) {
-		print STDERR  "Missing required argument(s):", $/;
-		for (keys %required_options) {
-			print STDERR "\t", $_, ' in ', $required_options{$_}, "\n";
-		}
-		return kExitError;
+		return $self->_error("Missing required argument(s)", \%required_options);
 	}
 
 	my $resp = $self->do_post('/', %post_content);
 	if ($resp != kExitError) {
+		#print STDERR  "vvvvvvvvvvvvvvvv THE JOB vvvvvvvvvvvvvvvvvvv", $/;
+		if ($resp->{id}) {
+			return { status => 'success', data => $resp};
+		}
+		#else...
 		return $resp;
 	}
-	return kExitError;
+	#return kExitError;
+	return $self->_error("JobEP: Unable to submit job.", $resp);
 }
 
 =head2 job_details

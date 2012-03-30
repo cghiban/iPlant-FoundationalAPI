@@ -47,7 +47,6 @@ sub new {
 	
 	my $self  = { map {$_ => $args->{$_}} grep {/(?:user|token|password|hostname|lifetime|debug)/} keys %$args};
 	
-	
 	bless($self, $class);
 	
 	if ($self->{user} && $self->{password} && !$self->{token}) {
@@ -99,18 +98,22 @@ sub auth_post_token {
 		$url .= "renew";
 		push @$content, token => $self->token;
 	}
-	
-	print STDERR  '..::Auth::auth_post_token: ', $url, $/ if $self->debug;
 
-	my $req = HTTP::Request->new(POST => $url);
 	if ($self->{lifetime}) {
 		push @$content, lifetime => $self->{lifetime};
 	}
-	if (@$content) {
-		print STDERR  "FIXME: see how to submit params.. at ", __LINE__, $/;
-		#$req->content($content);
-	}
-	my $res = $ua->request($req);
+	
+	print STDERR  '..::Auth::auth_post_token: ', $url, $/ if $self->debug;
+
+# 	my $req = HTTP::Request->new(POST => $url);
+# 	if (@$content) {
+# 		print STDERR Dumper( \$content), $/ if $self->debug;
+# 		print STDERR  "FIXME: see how to submit params.. at ", __LINE__, $/;
+# 		$req->content($content);
+# 	}
+# 	my $res = $ua->request($req);
+
+	my $res = $ua->post( $url, $content);
 	
 	my $message;
 	my $mref;

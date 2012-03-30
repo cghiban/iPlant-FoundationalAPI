@@ -58,8 +58,9 @@ sub new {
 	my %args = @_;
 	my $class = ref($proto) || $proto;
 	
-	my $self  = {	'hostname' => 'foundation.iplantc.org',
-			'iplanthome' => '/iplant/home/',
+	my $self  = {
+			hostname => 'foundation.iplantc.org',
+			iplanthome => '/iplant/home/',
 			processors => 1,
 			run_time => '01:00:00',
 			user => $args{user} || '',
@@ -67,8 +68,9 @@ sub new {
 			token => $args{token} || '',
 			credential_class => $args{credential_class} || 'self',
 			auth => undef,
+			lifetime => defined $args{lifetime} ? delete $args{lifetime} : undef,
 			debug => defined $args{debug} ? delete $args{debug} : undef,
-	};
+		};
 	
 	$self = _auto_config($self) unless %args;
 	

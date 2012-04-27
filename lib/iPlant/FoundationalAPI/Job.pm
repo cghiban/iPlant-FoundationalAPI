@@ -63,6 +63,12 @@ sub submit_job {
 	my %required_options = ();
 	my %available_options = ();
 
+	# fix jobName
+	if (defined $params{jobName} && $params{jobName} ne "") {
+		$params{jobName} =~ s|/+||g;
+		$params{jobName} =~ s|^\d+|N|;
+	}
+
 	my %post_content = (
 			softwareName => $application->id,
 			jobName => delete $params{jobName} || 'Job for ' . $application->id,
@@ -71,8 +77,8 @@ sub submit_job {
 			memory => delete $params{memory} || '',
 			archive => delete $params{archive} || 'false',
 			#archivePath => '/' . $self->user . '/analyses/',
+			callbackUrl => delete $params{callbackUrl} || undef,
 		);
-
 
 	for my $opt_group (qw/inputs outputs parameters/) {
 		for my $opt ($application->$opt_group) {

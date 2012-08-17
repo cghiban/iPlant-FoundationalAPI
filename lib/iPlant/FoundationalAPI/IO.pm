@@ -24,6 +24,8 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+{
+my @permissions = qw/canRead canWrite canExecute/;
 
 =head1 SYNOPSIS
 
@@ -128,7 +130,7 @@ sub rename {
 	}
 
 	my $st = $self->do_put($path, action => 'rename', newName => uri_escape($new_name));
-	print STDERR 'rename status: ', Dumper( $st), $/;
+	print STDERR 'rename status: ', Dumper( $st), $/ if $self->debug;;
 	#if ($st == -1) {
 	#	return undef;
 	#}
@@ -240,9 +242,43 @@ sub upload {
 	return kExitError;
 }
 
+=head2 share
+
+=cut
+
+sub share {
+	my ($self, $path, $ipc_user, %perms) = @_;
+
+	my %p = ();
+	for (@permissions) {
+		if (defined $perms{$_}) {
+			$p{$_} = 'false';
+			if ($perms{$_}) {
+				$p{$_} = 'true';
+			}
+		}
+	}
+	print STDERR  'permissions to set: ', join (', ', keys %p), $/ if $debug;
+
+	return $self->_error("IO::share: nothing to share. ") unless ($path && $ipc_user && %p);
+
+	$p{username} = $ipc_user;
+	$path = '/share' . $path;
+	
+	my $resp = $self->do_post($path, %p);
+	if ($resp != kExitError) {
+		# due to how do_post works:
+		return ref $resp && !%$resp ? {'status' => 'success'} : $resp;
+	}
+	return $self->_error("IO::share: Unable to share file.", $resp);
+
+}
+
+
+
 =head1 AUTHOR
 
-Cornel Ghiban, C<< <ghiban at cshl.edu> >>
+Cornel Ghiban, C<< <cghiban at gmail.com> >>
 
 =head1 BUGS
 
@@ -298,5 +334,7 @@ See http://dev.perl.org/licenses/ for more information.
 
 
 =cut
+
+}
 
 1; # End of iPlant::FoundationalAPI::IO

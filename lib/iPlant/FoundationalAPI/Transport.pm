@@ -2,11 +2,11 @@ package iPlant::FoundationalAPI::Transport;
 
 use Carp;
 use File::HomeDir ();
+#use File::Basename qw/dirname/;
 use Data::Dumper;
 
-#require Exporter;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 use vars qw($VERSION);
 
 use iPlant::FoundationalAPI::Constants ':all';
@@ -94,16 +94,27 @@ sub do_get {
 	my $ua = _setup_user_agent($self);
 	my ($req, $res);
 
-	if (defined $params{limit_size} || defined $params{download}) {
+	if (defined $params{limit_size} || defined $params{save_to} || defined $params{stream_to_stdout}) {
 
 		my $data;
 
-		if ($params{download}) {
-			$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
-			if ($res->is_success) {
-				$data = $res->content;
-			}
+		if ($params{save_to}) {
+			my $filepath = $params{save_to};
+			# should we at least check if parent directory exists?
+
+			$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
+						':content_file' => $filepath,
+					);
+			$data = 1;
 		}
+		elsif ($params{stream_to_stdout}) {
+			$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
+						#':read_size_hint' => $params{limit_size} > 0 ? $params{limit_size} : undef,
+						':content_cb' => sub {my ($d)= @_; print STDOUT $d;},
+					);
+			$data = 1;
+		}
+
 		else {
 			$res = $ua->get("$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
 						':read_size_hint' => $params{limit_size} > 0 ? $params{limit_size} : undef,
@@ -115,7 +126,7 @@ sub do_get {
 		}
 		else {
 			print STDERR $res->status_line, "\n" if $self->debug;
-			print STDERR $req->content, "\n" if $self->debug;
+			#print STDERR $req->content, "\n" if $self->debug;
 		
 			return kExitError;
 		}
@@ -268,8 +279,8 @@ sub do_post {
 
 	print STDERR '::do_post: ', Dumper( \%params), $/ if $self->debug;
 	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" 
-
 		if $self->debug;
+
 	my $ua = $self->_setup_user_agent;
 	my $res = $ua->post(
 				"$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path,
@@ -284,7 +295,7 @@ sub do_post {
 	if ($res->is_success) {
 		$message = $res->content;
 		if ($self->debug) {
-			print STDERR $message, "\n";
+			print STDERR '::do_post content: ', $message, "\n";
 		}
 		$mref = eval {$json->decode( $message );};
 		if ($mref && $mref->{status} eq 'success') {

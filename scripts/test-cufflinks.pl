@@ -85,12 +85,12 @@ else {
 #----------------------------------------------------
 # APPS end point
 my $apps = $api_instance->apps;
-my ($cl) = $apps->find_by_name("cufflinks");
+my ($cl) = $apps->find_by_name("dnalc-cufflinks-lonestar-2.0.2");
 if ($cl) {
 	print STDERR Dumper( $cl ), $/;
 }
 else {
-	print STDERR  "App [tophat] not found!!", $/;
+	print STDERR  "App [dnalc-cufflinks-lonestar-2.0.2] not found!!", $/;
 	exit -1;
 }
 
@@ -101,7 +101,7 @@ $job_ep->debug(1);
 
 my $job_id = 0;
 my %job_arguments = (
-			jobName => 'CL-job52-' . int(rand(100)),
+			jobName => 'CL-job-random' . int(rand(100)),
 			archive => 1,
 			query1 => $input_file->path,
 			BIAS_FASTA => '/shared/iplantcollaborative/genomeservices/legacy/0.30/genomes/arabidopsis_thaliana/col-0/v10/genome.fas',
@@ -110,25 +110,30 @@ my %job_arguments = (
 			requestedTime => '2:10:00',
 			softwareName => $cl->id,
 
-			maxIntronLength => '50',
-			maxBundleLength => '3500000',
+			compatibleHitsNorm => 0,
 			preMrnaFraction => '0.15',
 			smallAnchorFraction => '0.09',
+			noFauxReads => 0,
 			trim3avgcovThresh => '10',
-			trim3dropoffFrac => '10',
+			trim3dropoffFrac => '0.1',
 			minIsoformFraction => '0.1',
 			minFragsPerTransfrag => '10',
 			intronOverhangTolerance => '10',
 			libraryType => 'fr-unstranded',
 			minIntronLength => '50',
+			maxIntronLength => '300000',
+			maxBundleLength => '3500000',
 			overhangTolerance => '10',
 			overhangTolerance3 => '600',
+			totalHitsNorm => 1,
+			upperQuartileNorm => 0,
+			multiReadCorrect => 0,
 		);
 
 my $job = $job_ep->submit_job($cl, %job_arguments), $/;
 #print STDERR Dumper($job), $/; 
 if ($job != kExitError) {
-	$job_id = $job->{id};
+	$job_id = $job->{data} ? $job->{data}->{id} : $job->{id};
 	print STDERR  "JOB_ID: ", $job_id, $/;
 }
 else {

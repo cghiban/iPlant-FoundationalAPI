@@ -36,6 +36,9 @@ Perhaps a little code snippet.
 
 =head2 list
 
+	List available apps. If unauthenticated, it lists only the public apps, otherwise 
+	it lists private, shared and public apps.
+
 =cut
 
 # retrieve a list of the available applications
@@ -43,7 +46,7 @@ sub list {
 	my ($self) = @_;
 
 	my @applications = ();
-	for (qw|/list /share/list|) {
+	for (qw|/list|) {
 		my $list = $self->do_get($_);
 		if ($list != kExitError && 'ARRAY' eq ref $list) {
 			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
@@ -53,7 +56,7 @@ sub list {
 	wantarray ? @applications : \@applications;
 }
 
-=head2 load
+=head2 find_by_name
 
 =cut
 
@@ -62,7 +65,8 @@ sub find_by_name {
 	my @applications = ();
 
 	if ($name) {
-		for my $ep (qw|/name /share/name|) {
+		#for my $ep (qw|/shared/name /name|) {
+		for my $ep (qw|/name|) {
 			my $list = $self->do_get($ep . '/' . $name);
 			if ($list != kExitError && 'ARRAY' eq ref $list) {
 				push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
@@ -71,6 +75,25 @@ sub find_by_name {
 	}
 	wantarray ? @applications : \@applications;
 }
+
+=head2 find_by_id
+
+=cut
+
+sub find_by_id {
+	my ($self, $app_id) = @_;
+	my @applications = ();
+
+	if ($app_id) {
+		my $app = $self->do_get('/' . $app_id);
+		if ($ != kExitError && 'HASH' eq ref $app) {
+			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } ($app);
+		}
+	}
+	wantarray ? @applications : $applications[0];
+}
+
+
 
 =head1 AUTHOR
 

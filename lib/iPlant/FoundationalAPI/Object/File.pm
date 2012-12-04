@@ -26,7 +26,11 @@ Perhaps a little code snippet.
     my $apif = iPlant::FoundationalAPI->new;
     my $io = $apif->io;
     my @files = $io->list($path);
-    print $files[0]->owner;
+	my $file = $files[0];
+    print $file->owner, "\n";
+    print "File ", $file->name, " is a ", $file->is_folder ? "directory" : "file", ".\n";
+
+	# share a file to other iPlant user
     ...
 
 =head1 METHODS
@@ -34,7 +38,6 @@ Perhaps a little code snippet.
 =head2 new
 
 =cut
-
 
 sub new {
 	my ($proto, $args) = @_;
@@ -92,6 +95,11 @@ sub is_file {
 sub is_folder {
 	my ($self) = @_;
 	return $self->type eq 'dir';
+}
+
+sub last_modified {
+	my ($self) = @_;
+	return $self->{lastModified};
 }
 
 sub TO_JSON {

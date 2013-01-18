@@ -163,7 +163,7 @@ sub stream_file {
 	#print STDERR  "::IO::stream_file: Not implemented", $/;
 	# Check for the requested path to be renamed
 	unless (defined($path)) {
-		print STDERR "::IO::rename Please specify a path which you want renamed\n";
+		print STDERR "::IO::stream_file Please specify a path which you want renamed\n";
 		return;
 	}
 

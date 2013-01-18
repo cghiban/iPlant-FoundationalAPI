@@ -1,5 +1,8 @@
 package iPlant::FoundationalAPI::Transport;
 
+use strict;
+use warnings;
+
 use Carp;
 use File::HomeDir ();
 #use File::Basename qw/dirname/;

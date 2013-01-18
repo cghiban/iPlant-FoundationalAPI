@@ -120,7 +120,12 @@ sub submit_job {
 sub job_details {
 	my ($self, $job_id) = @_;
 
-	$self->do_get('/' . $job_id);
+	my $data = $self->do_get('/' . $job_id);
+	if ('HASH' eq ref $data) {
+		return iPlant::FoundationalAPI::Object::Job->new($data);
+	}
+
+	return $data;
 }
 
 sub job_output_files {

@@ -92,4 +92,17 @@ sub parameters {
 }
 
 
+sub status {
+	my ($self) = @_;
+	$self->{status};
+}
+
+sub is_finished {
+	$_[0]->status =~ /(?:FINISHED|KILLED|FAILED|STOPPED|ARCHIVING_FINISHED|ARCHIVING_FAILED)/;
+}
+
+sub is_successful {
+	$_[0]->status =~ /(ARCHIVING_)?FINISHED/
+}
+
 1; # End of iPlant::FoundationalAPI::Object::Application

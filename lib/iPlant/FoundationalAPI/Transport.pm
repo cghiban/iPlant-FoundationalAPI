@@ -231,7 +231,7 @@ sub do_delete {
 		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;
 		return kExitError;
 	}
-	print STDERR  "DELETE Path: ", $path, $/;
+	print STDERR  "DELETE Path: ", $path, $/ if $self->debug;
 
 	my $ua = _setup_user_agent($self);
 	my $req = HTTP::Request->new(DELETE => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);

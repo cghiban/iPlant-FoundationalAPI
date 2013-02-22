@@ -66,7 +66,7 @@ sub submit_job {
 	# fix jobName
 	if (defined $params{jobName} && $params{jobName} ne "") {
 		$params{jobName} =~ s|/+||g;
-		$params{jobName} =~ s|^\d+|N|;
+		$params{jobName} =~ s|^\d|N|;
 	}
 
 	my %post_content = (
@@ -104,12 +104,11 @@ sub submit_job {
 	if ($resp != kExitError) {
 		#print STDERR  "vvvvvvvvvvvvvvvv THE JOB vvvvvvvvvvvvvvvvvvv", $/;
 		if ($resp->{id}) {
-			return { status => 'success', data => $resp};
+			return { status => 'success', data => iPlant::FoundationalAPI::Object::Job->new($resp) };
 		}
 		#else...
 		return $resp;
 	}
-	#return kExitError;
 	return $self->_error("JobEP: Unable to submit job.", $resp);
 }
 

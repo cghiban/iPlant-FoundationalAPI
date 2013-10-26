@@ -59,7 +59,7 @@ sub readdir {
 		return;
 	}
 
-	my $list = $self->do_get('/list' . $path);
+	my $list = $self->do_get('/listings' . $path);
 	return @$list ? [map {iPlant::FoundationalAPI::Object::File->new($_)} @$list] : [];
 }
 
@@ -83,13 +83,15 @@ sub ls {
 sub mkdir {
 	my ($self, $path, $new_dir) = @_;
 
+    my $ep_path = '/media';
+
 	# Check for a request path
 	unless (defined($path)) {
 		print STDERR "Please specify a path for which you want contents retrieved\n";
 		return;
 	}
 
-	return $self->do_put($path, action => 'mkdir', dirName => uri_escape($new_dir));
+	return $self->do_put($ep_path . $path, action => 'mkdir', path => uri_escape($new_dir));
 }
 
 =head2 remove
@@ -100,13 +102,14 @@ sub mkdir {
 sub remove {
 	my ($self, $path) = @_;
 
+    my $ep_path = '/media';
 	# Check for a request path
 	unless (defined($path)) {
 		print STDERR "::IO::remove - Please specify the path you want removed\n";
 		return;
 	}
 
-	return $self->do_delete($path);
+	return $self->do_delete($ep_path . $path);
 }
 
 =head2 rename
@@ -117,6 +120,7 @@ sub remove {
 sub rename {
 	my ($self, $path, $new_name) = @_;
 
+    my $ep_path = '/media';
 	# Check for the requested path to be renamed
 	unless (defined($path)) {
 		print STDERR "::IO::rename Please specify a path which you want renamed\n";
@@ -129,8 +133,8 @@ sub rename {
 		return;
 	}
 
-	my $st = $self->do_put($path, action => 'rename', newName => uri_escape($new_name));
-	print STDERR 'rename status: ', Dumper( $st), $/ if $self->debug;;
+	my $st = $self->do_put($ep_path . $path, action => 'rename', path => uri_escape($new_name));
+	print STDERR 'rename status: ', Dumper( $st), $/ if $self->debug;
 	#if ($st == -1) {
 	#	return undef;
 	#}
@@ -191,6 +195,8 @@ sub upload {
 		print STDERR  "Invalid request. ", $/;
 		return kExitError;
 	}
+
+    $END_POINT .= '/media';
 	
 	# Check for a request path
 	unless (defined($path)) {

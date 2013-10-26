@@ -38,7 +38,8 @@ if (0) {
 #		{"user":"iplant_username", "password":"iplant_password", "token":"iplant_token"}
 #		# set either the password or the token
 
-my $api_instance = iPlant::FoundationalAPI->new;
+#my $api_instance = iPlant::FoundationalAPI->new(debug => 1);
+my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 1);
 $api_instance->debug(0);
 
 if ($api_instance->token eq kExitError) {
@@ -50,6 +51,7 @@ print "Token: ", $api_instance->token, "\n";
 my $base_dir = '/' . $api_instance->user;
 print "Working in [", $base_dir, "]", $/;
 
+
 my ($st, $dir_contents_href);
 my $new_file_name = "Bx_" . int(rand(99)) . '.fa';
 
@@ -58,10 +60,10 @@ my $new_file_name = "Bx_" . int(rand(99)) . '.fa';
 # IO
 #
 my $io = $api_instance->io;
-if (1) {
-	my $new_dir = 'API_test_' . rand(1000);
+if (0) {
+	my $new_dir = 'Agave_API_test_' . rand(1000);
 	my $new_dir_renamed = $new_dir;
-	$new_dir_renamed =~ s/API_test/API_renamed_test/;
+	$new_dir_renamed =~ s/Agave_API_test/API_renamed_test/;
 
 
 	print "---------------------------------------------------------\n";
@@ -127,7 +129,7 @@ if (1) {
 	print "Available applications (top 30):";
 	print "\n---------------------------------------------------------\n";
 	my @list = sort {$a->{id} cmp $b->{id}} $apps->list;
-	for my $ap (@list[0..30]) {
+	for my $ap (scalar @list > 30 ? @list[0..30] : @list) {
 		print "\t", $ap, "    [", $ap->shortDescription, "]\n";
 	}
 

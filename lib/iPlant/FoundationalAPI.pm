@@ -59,7 +59,7 @@ sub new {
 	my $class = ref($proto) || $proto;
 	
 	my $self  = {
-			hostname => 'foundation.iplantcollaborative.org',
+			hostname => delete $args{hostname} || 'foundation.iplantcollaborative.org',
 			iplanthome => '/iplant/home/',
 			processors => 1,
 			run_time => '01:00:00',

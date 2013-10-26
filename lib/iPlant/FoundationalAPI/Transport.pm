@@ -34,13 +34,13 @@ use constant kMaximumSleepSeconds => 600; # 10 min
 
 # Never subject to configuration
 my $ZONE = 'iPlant Job Service';
-my $AGENT = "iPlantRobot/0.1 ";
+my $AGENT = "iPlantRobot/0.2 ";
 
 # Define API endpoints
-my $IO_ROOT = "io-v1";
-my $IO_END = "$IO_ROOT/io";
+my $IO_ROOT = "v2/files";
+my $IO_END = "$IO_ROOT";
 
-my $AUTH_ROOT = "auth-v1";
+my $AUTH_ROOT = "v2/auth";
 my $AUTH_END = $AUTH_ROOT;
 
 my $DATA_ROOT = "data-v1";

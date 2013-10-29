@@ -157,14 +157,16 @@ sub move {
 	TODO - can it handle large files?
 		- should it store data in tmp files and when done, assemble the final product?
 		- should we pass it a file/filehadle to write data into?
-
+        - should we do parallel download if server responds w/ "Accept-Ranges: bytes" header?!
+            my $ua = LWP::UserAgent->new;
+            $ua->default_headers->push_header(Range => "bytes=1000-2000");
+            my $response = $ua->get($url);
 =cut
 
 
 sub stream_file {
 	my ($self, $path, %params) = @_;
 
-	#print STDERR  "::IO::stream_file: Not implemented", $/;
 	# Check for the requested path to be renamed
 	unless (defined($path)) {
 		print STDERR "::IO::stream_file Please specify a path which you want renamed\n";
@@ -172,9 +174,9 @@ sub stream_file {
 	}
 
 	# TODO - make limit_size = 1024 by default - why?
-	#unless (defined $params)
+    my $ep_path = '/media';
 
-	my $buffer = $self->do_get($path, %params);
+	my $buffer = $self->do_get($ep_path . $path, %params);
 
 	return $buffer if ($buffer ne kExitError);
 }

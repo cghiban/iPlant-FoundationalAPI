@@ -85,8 +85,7 @@ sub do_get {
 		print STDERR "::do_get: invalid request: ", $self, $/;
 		return kExitError;
 	}
-	#print $END_POINT, $/;
-	
+
 	# Check for a request path
 	unless (defined($path)) {
 		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;

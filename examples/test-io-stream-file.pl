@@ -4,8 +4,9 @@ use common::sense;
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-use iPlant::FoundationalAPI::Constants ':all';
 use iPlant::FoundationalAPI ();
+
+use Scalar::Util qw( blessed );
 
 my $remote_file = shift;
 
@@ -19,7 +20,7 @@ unless (defined $remote_file) {
 my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu');
 $api_instance->debug(0);
 
-if ($api_instance->token eq kExitError) {
+unless ($api_instance->token) {
 	print STDERR "Can't authenticate!" , $/;
 	exit 1;
 }
@@ -32,5 +33,13 @@ my ($st, $dir_contents_href);
 
 my $io = $api_instance->io;
 
-$io->stream_file("$base_dir/$remote_file", stream_to_stdout => 1, limit_size => 500);
+try {
+    $io->stream_file("$base_dir/$remote_file", stream_to_stdout => 1, limit_size => 500);
+}
+catch {
+    die $_ unless blessed $_ && $_->can('rethrow');
+    if ( $_->isa('Agave::Exceptions::InvalidArguments') ) {
+        
+    }
+}
 

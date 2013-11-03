@@ -1,13 +1,13 @@
 package iPlant::FoundationalAPI::IO;
 
-#use warnings;
-#use strict;
+use warnings;
+use strict;
 use Carp;
 use HTTP::Request::Common qw(POST);
 use URI::Escape;
+use Try::Tiny;
 use Data::Dumper;
 
-use iPlant::FoundationalAPI::Constants ':all';
 use iPlant::FoundationalAPI::Object::File;
 use base qw/iPlant::FoundationalAPI::Base/;
 
@@ -176,9 +176,13 @@ sub stream_file {
 	# TODO - make limit_size = 1024 by default - why?
     my $ep_path = '/media';
 
-	my $buffer = $self->do_get($ep_path . $path, %params);
+	my $buffer = try { $self->do_get($ep_path . $path, %params);}
+        catch {
+            warn $_;
+            return;
+        };
 
-	return $buffer if ($buffer ne kExitError);
+	return $buffer;
 }
 
 =head2 upload
@@ -194,16 +198,16 @@ sub upload {
 
 	my $END_POINT = $self->_get_end_point;
 	unless ($END_POINT) {
-		print STDERR  "Invalid request. ", $/;
-		return kExitError;
+        Agave::Exceptions::InvalidEndPoint->throw("do_get: invalid endpoint.");
 	}
 
     $END_POINT .= '/media';
 	
 	# Check for a request path
 	unless (defined($path)) {
-		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;
-		return kExitError;
+        Agave::Exceptions::InvalidArguments->throw(
+                "Please specify a RESTful path for $END_POINT"
+            );
 	}
 
 	print STDERR '::do_post: ', Dumper( \%params), $/ if $self->debug;
@@ -233,7 +237,7 @@ sub upload {
 		if ($self->debug) {
 			print STDERR $message, "\n";
 		}
-		my $json = JSON::XS->new->allow_nonref;
+		my $json = JSON->new->allow_nonref;
 		$mref = eval {$json->decode( $message );};
 		if ($mref) {
 			if ($mref->{status} eq 'success') {
@@ -247,7 +251,7 @@ sub upload {
 	else {
 		print STDERR $res->status_line, "\n";
 	}
-	return kExitError;
+	return;
 }
 
 =head2 share
@@ -266,20 +270,21 @@ sub share {
 			}
 		}
 	}
-	print STDERR  'permissions to set: ', join (', ', keys %p), $/ if $debug;
+	print STDERR  'permissions to set: ', join (', ', keys %p), $/ if $self->debug;
 
 	return $self->_error("IO::share: nothing to share. ") unless ($path && $ipc_user && %p);
 
 	$p{username} = $ipc_user;
 	$path = '/share' . $path;
 	
-	my $resp = $self->do_post($path, %p);
-	if ($resp != kExitError) {
-		# due to how do_post works:
-		return ref $resp && !%$resp ? {'status' => 'success'} : $resp;
-	}
-	return $self->_error("IO::share: Unable to share file.", $resp);
-
+	my $resp = try {
+            $self->do_post($path, %p);
+        }
+        catch {
+	        return $self->_error("IO::share: Unable to share file.", $_);
+        };
+	# due to how do_post works:
+	return ref $resp && !%$resp ? {'status' => 'success'} : $resp;
 }
 
 

@@ -4,8 +4,8 @@ use strict;
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
+use Try::Tiny;
 
-use iPlant::FoundationalAPI::Constants ':all';
 use iPlant::FoundationalAPI ();
 use Data::Dumper; 
 
@@ -28,13 +28,12 @@ sub list_dir {
 # see examples/test-io.pl for another way to do auth
 #
 my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 1);
-$api_instance->debug(0);
+#$api_instance->debug(0);
 
-if ($api_instance->token eq kExitError) {
+unless ($api_instance->token) {
 	print STDERR "Can't authenticate!" , $/;
 	exit 1;
 }
-#print "Token: ", $api_instance->token, "\n";
 
 my $base_dir = '/' . $api_instance->user;
 print "Working in [", $base_dir, "]", $/;
@@ -45,37 +44,45 @@ print "Working in [", $base_dir, "]", $/;
 #
 
 my $ap_wc;
-if (1) {
-	$api_instance->debug(0);
-	my $apps = $api_instance->apps;
-	sleep 3;
-	print "\n---------------------------------------------------------\n";
-	print "Available applications (top 10):";
-	print "\n---------------------------------------------------------\n";
-	my @list = sort {$a->{id} cmp $b->{id}} $apps->list;
-	for my $ap (scalar @list > 10 ? @list[0..9] : @list) {
-		print "\t", $ap, "    [", $ap->shortDescription, "]\n";
-	}
+$api_instance->debug(0);
+my $apps = $api_instance->apps;
+sleep 3;
+print "\n---------------------------------------------------------\n";
+print "Available applications (top 10):";
+print "\n---------------------------------------------------------\n";
+my @list = try {
+        $apps->list;
+    }
+    catch {
+        die $_ unless blessed $_ && $_->can('rethrow');
+        if ( $_->isa('Agave::Exceptions') ) {
+            warn $_->error, "\n", $_->trace->as_string, "\n";
+            warn $_->content if $_->can('content');
+            exit 1;
+        }
+        $_->rethrow;
+    };
+@list = sort {$a->{id} cmp $b->{id}} @list;
+for my $ap (scalar @list > 10 ? @list[0..9] : @list) {
+    print "\t", $ap, "    [", $ap->shortDescription, "]\n";
+}
 
-	sleep 3;
-	print "\n---------------------------------------------------------\n";
-	print "Looking for application 'wc' - Word Count:";
-	print "\n---------------------------------------------------------\n";
+sleep 3;
+print "\n---------------------------------------------------------\n";
+print "Looking for application 'wc' - Word Count:";
+print "\n---------------------------------------------------------\n";
 
-	($ap_wc) = $apps->find_by_name("wc");
-	if ($ap_wc) {
-		print "\nFound [", $ap_wc, "] - ", lc $ap_wc->shortDescription, $/;
-
-		print "\tInputs: \n";
-		print "\t\t", $_->{id} for ($ap_wc->inputs);
-		print "\n\tParams: \n";
-		print "\t\t", $_->{id} for ($ap_wc->parameters);
-		print "\n";
-	}
-	else {
-		print "\t No application found with name 'wc'\n";
-	}
-
+($ap_wc) = $apps->find_by_name("wc");
+if ($ap_wc) {
+	print "\nFound [", $ap_wc, "] - ", lc $ap_wc->shortDescription, $/;
+	print "\tInputs: \n";
+	print "\t\t", $_->{id} for ($ap_wc->inputs);
+	print "\n\tParams: \n";
+	print "\t\t", $_->{id} for ($ap_wc->parameters);
+	print "\n";
+}
+else {
+	print "\t No application found with name 'wc'\n";
 }
 
 #--------------------------

@@ -5,7 +5,6 @@ use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-use iPlant::FoundationalAPI::Constants ':all';
 use iPlant::FoundationalAPI ();
 use Data::Dumper; 
 
@@ -41,28 +40,35 @@ if (0) {
 #		# set either the password or the token
 
 #my $api_instance = iPlant::FoundationalAPI->new(debug => 1);
-my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 1);
-$api_instance->debug(0);
 
-if ($api_instance->token eq kExitError) {
-	print STDERR "Can't authenticate!" , $/;
-	exit 1;
+my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 0);
+#$api_instance->debug(1);
+
+unless ($api_instance->token) {
+    warn "\nError: Authentication failed!\n";
+    exit 1;
 }
 print "Token: ", $api_instance->token, "\n";
 
 my $base_dir = '/' . $api_instance->user;
 print "Working in [", $base_dir, "]", $/;
 
-
 my ($st, $dir_contents_href);
-my $new_file_name = "Bx_" . int(rand(99)) . '.fa';
-
 
 #-----------------------------
 # IO
 #
-my $io = $api_instance->io;
-if (1) {
+    my $io = $api_instance->io;
+    $io->debug(0);
+
+	print "---------------------------------------------------------\n";
+	print "\t** Listing of directory: ", $base_dir, $/;
+	print "---------------------------------------------------------\n";
+
+	$dir_contents_href = $io->readdir($base_dir);
+    #print STDERR Dumper( $dir_contents_href), $/;
+	list_dir($dir_contents_href);
+
 	my $new_dir = 'Agave_API_test_' . rand(1000);
 	my $new_dir_renamed = $new_dir;
 	$new_dir_renamed =~ s/Agave_API_test/API_renamed_test/;
@@ -75,7 +81,6 @@ if (1) {
 	$st = $io->mkdir($base_dir, $new_dir);
 	$dir_contents_href = $io->readdir($base_dir);
 
-	#print STDERR Dumper( $dir_contents_href), $/;
 	list_dir($dir_contents_href);
 
 	sleep 3;
@@ -94,6 +99,8 @@ if (1) {
 	list_dir($dir_contents_href);
 
 	sleep 3;
+
+    my $new_file_name = "Bx_" . int(rand(99)) . '.fa';
 	print "---------------------------------------------------------\n";
 	print "\t** Removing the new dir & adding a new file, ", $new_file_name, $/;
 	print "---------------------------------------------------------\n";
@@ -105,17 +112,4 @@ if (1) {
 	sleep 3;
 	$dir_contents_href = $io->readdir($base_dir), $/;
 	list_dir($dir_contents_href);
-
-	sleep 5;
-}
-
-
-#-----------------------------
-# DATA
-# -not working yet?!
-
-#my $data = $api_instance->data;
-#$st = $data->transforms;
-#print STDERR Dumper( $st ), $/;
-
 

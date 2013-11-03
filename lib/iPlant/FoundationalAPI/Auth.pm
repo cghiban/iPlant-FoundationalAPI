@@ -3,10 +3,9 @@ package iPlant::FoundationalAPI::Auth;
 use warnings;
 use strict;
 
-use iPlant::FoundationalAPI::Constants ':all';
 use base 'iPlant::FoundationalAPI::Base';
 use MIME::Base64;
-use Carp qw/carp/;
+use Try::Tiny;
 use Data::Dumper;
 
 =head1 NAME
@@ -15,11 +14,11 @@ iPlant::FoundationalAPI::Auth - The great new iPlant::FoundationalAPI::Auth!
 
 =head1 VERSION
 
-Version 0.01
+Version 0.2.1
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.2.1';
 
 my $TRANSPORT = 'https';
 
@@ -45,42 +44,36 @@ sub new {
 	my ($proto, $args) = @_;
 	my $class = ref($proto) || $proto;
 	
-	my $self  = { map {$_ => $args->{$_}} grep {/(?:user|token|password|hostname|lifetime|debug)/} keys %$args};
+	my $self  = { map {$_ => $args->{$_}} grep {/^(?:user|token|password|hostname|lifetime|debug)$/} keys %$args};
 	
 	bless($self, $class);
-	
-	if ($self->{user} && $self->{password} && !$self->{token}) {
-		# hit auth service for a new token
-		my $newToken = $self->auth_post_token();
-		print STDERR "Issued-Token: ", $newToken, "\n" if $self->debug;
-		$self->{token} = $newToken;
-		delete $self->{password};
-	}
-	elsif ($self->{user} && $self->{token}) {
+
+	if ($self->{user} && $self->{token}) {
 		unless ($self->is_token_valid) {
-			carp "Authentication failed...\n";
-			return;
+            # we should catch this and switch to password authentication
+            # will try to get a new token, if the password was provided
+	        delete $self->{token};
 		}
 		else {
 			print STDERR  "Token validated successfully", $/ if $self->debug;
 		}
 	}
 
+	if ($self->{user} && $self->{password} && !$self->{token}) {
+		# hit auth service for a new token
+		my $newToken = $self->_auth_post_token();
+		print STDERR "Issued-Token: ", $newToken, "\n" if $self->debug;
+		$self->{token} = $newToken;
+	}
+	delete $self->{password};
+
 	return $self;
 }
 
-sub validate_auth {
-	my ($self) = @_;
-	
-	return 0;
-}
-
-
-sub auth_post_token {
+sub _auth_post_token {
 	
 	# Retrieve a token in user mode
-	my $self = shift;
-	my $renew = shift;
+	my ($self, $renew) = @_;
 
 	if ($renew && $self->{password}) {
 		print STDERR  "Revalidating token...", $/ if $self->debug;
@@ -103,7 +96,7 @@ sub auth_post_token {
 		push @$content, lifetime => $self->{lifetime};
 	}
 	
-	print STDERR  '..::Auth::auth_post_token: ', $url, $/ if $self->debug;
+	print STDERR  '..::Auth::_auth_post_token: ', $url, $/ if $self->debug;
 
 # 	my $req = HTTP::Request->new(POST => $url);
 # 	if (@$content) {
@@ -117,11 +110,18 @@ sub auth_post_token {
 	
 	my $message;
 	my $mref;
-	my $json = JSON::XS->new->allow_nonref;
+	my $json = JSON->new->allow_nonref;
 
-	if ($res->is_success) {
-		$message = $res->content;
-		$mref = eval {$json->decode( $message );};
+    if ($res->is_success) {
+        $message = $res->content;
+        $mref = try {
+                $json->decode( $message );
+            }
+            catch {
+	    		print STDERR  $message, $/;
+                Agave::Exceptions::AuthFailed->throw("Auth failed:\n" . $message);
+            };
+
 		if ($mref) {
 			if ($mref->{status} eq 'success' && defined($mref->{'result'}->{'token'})) {
 				$self->{token_expires} = $mref->{'result'}->{expires};
@@ -129,23 +129,24 @@ sub auth_post_token {
 			}
 			else {
 				print STDERR  $mref->{'status'}, ": ", $mref->{'message'}, $/;
-				return kExitError;
+                Agave::Exceptions::AuthFailed->throw($mref->{message});
 			}
-		}
-		else {
-			print STDERR  $message, $/;
-			return kExitError;
-		}
+		} else {
+        }
 	} else {
 		print STDERR (caller(0))[3], " ", $res->status_line, "\n";
-		return undef;
+        Agave::Exceptions::HTTPError->throw(
+            code => $res->code,
+            message => $res->message,
+            content => $res->content,
+        );
 	}
 
 }
 
 =head2 is_token_valid
 
-  Checks is the token hasn't expired or not.
+  Checks if the token has expired or not.
   It returns the # of seconds till the expiration of the token.
   This info can be used to reissue a token or to revalidate the token that
   will soon expire.
@@ -156,8 +157,6 @@ sub is_token_valid {
 	my ($self) = shift;
 	
 	unless ($self->token_expiration) {
-		carp "Can't tell token expiration...\n" if $self->debug;
-
 		my $ua = $self->_setup_user_agent;
 		$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->token) );
 	
@@ -171,7 +170,7 @@ sub is_token_valid {
 	
 		my $message;
 		my $mref;
-		my $json = JSON::XS->new->allow_nonref;
+		my $json = JSON->new->allow_nonref;
 
 		if ($res->is_success) {
 			$message = $res->content;
@@ -189,7 +188,8 @@ sub is_token_valid {
 				return;
 			}
 		} else {
-			print STDERR (caller(0))[3], " ", $res->status_line, "\n";
+			print STDERR (caller(0))[3], " ", $res->status_line, "\n"
+                if $self->debug;
 			return;
 		}
 	}

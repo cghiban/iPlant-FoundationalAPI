@@ -5,7 +5,6 @@ use common::sense;
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-use iPlant::FoundationalAPI::Constants ':all';
 use iPlant::FoundationalAPI ();
 use File::Basename;
 use Data::Dumper; 
@@ -22,7 +21,7 @@ unless (defined $remote_file) {
 my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu');
 $api_instance->debug(0);
 
-if ($api_instance->token eq kExitError) {
+unless ($api_instance->token) {
 	print STDERR "Can't authenticate!" , $/;
 	exit 1;
 }

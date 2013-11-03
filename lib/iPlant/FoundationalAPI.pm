@@ -17,7 +17,6 @@ our $VERSION = '0.01';
 
 use base 'iPlant::FoundationalAPI::Base';
 
-use iPlant::FoundationalAPI::Constants ();
 use iPlant::FoundationalAPI::IO ();
 use iPlant::FoundationalAPI::Data ();
 use iPlant::FoundationalAPI::Apps ();
@@ -77,6 +76,8 @@ sub new {
 	if ($self->{user} && ($self->{token} || $self->{password})) {
 		_init_auth($self);
 	}
+
+    delete $self->{password};
 	
 	bless($self, $class);
 	return $self;
@@ -125,6 +126,9 @@ sub _init_auth {
 		$self->{token} = $auth->token;
 		$auth->debug($self->{debug});
 	}
+    else {
+        delete $self->{token};
+    }
 	$self->{auth} = $auth;
 }
 

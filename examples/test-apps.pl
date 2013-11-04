@@ -27,7 +27,7 @@ sub list_dir {
 
 # see examples/test-io.pl for another way to do auth
 #
-my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 1);
+my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 0);
 #$api_instance->debug(0);
 
 unless ($api_instance->token) {

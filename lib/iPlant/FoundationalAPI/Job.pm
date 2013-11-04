@@ -3,7 +3,6 @@ package iPlant::FoundationalAPI::Job;
 use warnings;
 use strict;
 
-use iPlant::FoundationalAPI::Constants ':all';
 use base qw/iPlant::FoundationalAPI::Base/;
 
 use iPlant::FoundationalAPI::Object::Job ();
@@ -100,16 +99,18 @@ sub submit_job {
 		return $self->_error("Missing required argument(s)", \%required_options);
 	}
 
-	my $resp = $self->do_post('/', %post_content);
-	if ($resp != kExitError) {
-		#print STDERR  "vvvvvvvvvvvvvvvv THE JOB vvvvvvvvvvvvvvvvvvv", $/;
+	my $resp = try {
+            $self->do_post('/', %post_content);
+        }
+        catch {
+	        return $self->_error("JobEP: Unable to submit job.");
+        };
+	if (ref $resp) {
 		if ($resp->{id}) {
 			return { status => 'success', data => iPlant::FoundationalAPI::Object::Job->new($resp) };
 		}
-		#else...
 		return $resp;
 	}
-	return $self->_error("JobEP: Unable to submit job.", $resp);
 }
 
 =head2 job_details

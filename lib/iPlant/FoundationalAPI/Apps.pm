@@ -3,7 +3,6 @@ package iPlant::FoundationalAPI::Apps;
 use warnings;
 use strict;
 
-use iPlant::FoundationalAPI::Constants ':all';
 use base qw/iPlant::FoundationalAPI::Base/;
 
 use iPlant::FoundationalAPI::Object::Application ();
@@ -46,12 +45,10 @@ sub list {
 	my ($self) = @_;
 
 	my @applications = ();
-	for (qw|/list|) {
-		my $list = $self->do_get($_);
-		if ($list != kExitError && 'ARRAY' eq ref $list) {
-			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
-		}
-	}
+    my $list = $self->do_get('/');
+    if ($list && 'ARRAY' eq ref $list) {
+        push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
+    }
 
 	wantarray ? @applications : \@applications;
 }
@@ -65,15 +62,13 @@ sub find_by_name {
 	my @applications = ();
 
 	if ($name) {
-		#for my $ep (qw|/shared/name /name|) {
-		for my $ep (qw|/name|) {
-			my $list = $self->do_get($ep . '/' . $name);
-			if ($list != kExitError && 'ARRAY' eq ref $list) {
-				push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
-			}
-		}
-	}
-	wantarray ? @applications : \@applications;
+        my $list = $self->do_get('/name/' . $name);
+        if ($list && 'ARRAY' eq ref $list) {
+            push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } @$list;
+        }
+    }
+
+    wantarray ? @applications : \@applications;
 }
 
 =head2 find_by_id
@@ -86,7 +81,7 @@ sub find_by_id {
 
 	if ($app_id) {
 		my $app = $self->do_get('/' . $app_id);
-		if ($ != kExitError && 'HASH' eq ref $app) {
+		if ($app && 'HASH' eq ref $app) {
 			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } ($app);
 		}
 	}

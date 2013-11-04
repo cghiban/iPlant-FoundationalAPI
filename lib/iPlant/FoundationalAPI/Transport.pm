@@ -39,12 +39,8 @@ use vars qw($VERSION);
     my $DATA_ROOT = "data-v1";
     my $DATA_END = "$DATA_ROOT/data";
 
-    my $APPS_ROOT = "apps-v1";
-    my $APPS_END = "$APPS_ROOT/apps";
-    my $APPS_SHARE_END = "$APPS_ROOT/apps/share/name";
-
-    my $JOB_END = "$APPS_ROOT/job";
-    my $JOBS_END = "$APPS_ROOT/jobs";
+    my $APPS_END = "v2/apps";
+    my $JOBS_END = "v2/jobs";
 
     my $TRANSPORT = 'https';
 
@@ -53,7 +49,7 @@ use vars qw($VERSION);
             io => $IO_END,
             data => $DATA_END,
             apps => $APPS_END,
-            job => $JOB_END,
+            jobs => $JOBS_END,
         );
 
 
@@ -217,7 +213,6 @@ use vars qw($VERSION);
             }
             my $json = JSON->new->allow_nonref;
             $mref = eval {$json->decode( $message );};
-            #return kExitOK;
             return $mref;
         }
         else {

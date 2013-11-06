@@ -132,11 +132,12 @@ use vars qw($VERSION);
         print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
         
         # Parse response
-        
-        #print STDERR Dumper( $res ), $/;
-        if ($res->is_success) {
+        my $message = $res->content;
+        # success or we have a json resp
+        my $headers = $res->headers;
+        my $is_json = $headers->{'content-type'} =~ m'^application/json';
+        if ($res->is_success || $is_json) {
             my $mref;
-            my $message = $res->content;
             print STDERR $message, "\n" if $self->debug;
 
             my $json = JSON->new->allow_nonref;

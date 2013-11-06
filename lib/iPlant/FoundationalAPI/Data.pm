@@ -3,7 +3,6 @@ package iPlant::FoundationalAPI::Data;
 use warnings;
 use strict;
 
-use iPlant::FoundationalAPI::Constants ':all';
 use base qw/iPlant::FoundationalAPI::Base/;
 
 =head1 NAME

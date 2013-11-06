@@ -25,7 +25,7 @@ Version 0.01
 our $VERSION = '0.01';
 
 {
-my @permissions = qw/canRead canWrite canExecute/;
+my @permissions = qw/read write execute/;
 
 =head1 SYNOPSIS
 
@@ -34,8 +34,8 @@ Quick summary of what the module does.
 Perhaps a little code snippet.
 
     use iPlant::FoundationalAPI::IO;
-
     my $foo = iPlant::FoundationalAPI::IO->new();
+    my $io = $foo->io;
     ...
 
 =head1 EXPORT
@@ -275,7 +275,7 @@ sub share {
 	return $self->_error("IO::share: nothing to share. ") unless ($path && $ipc_user && %p);
 
 	$p{username} = $ipc_user;
-	$path = '/share' . $path;
+	$path = '/pems' . $path;
 	
 	my $resp = try {
             $self->do_post($path, %p);
@@ -287,7 +287,44 @@ sub share {
 	return ref $resp && !%$resp ? {'status' => 'success'} : $resp;
 }
 
+=head2 get_perms
 
+    Gets permisions for a specified path
+
+    $perms = $io->get_perms($path);
+    say 'owner: ', $perms->{owner}; # 'you'
+    for my $p (@{$perms->{permissions}}) {
+        say $p->{username}, "\t", 
+            join(",", map {"$_"} 
+                grep {$p->{permission}->{$_}} 
+                keys %{$p->{permission}}
+            );
+    }
+
+=cut
+
+sub get_perms {
+    my ($self, $path) = @_;
+
+    $path = '/pems' . $path;
+
+    my $resp = try {
+            $self->do_get($path);
+        }
+        catch {
+	        return $self->_error("IO::get_perms: Unable read file permissions.", $_)
+                unless ref($_);
+            if ($_->isa('Agave::Exceptions::HTTPError')) {
+                return {status => 'error', message => $_->code . ' ' . $_->message}
+            }
+            else {
+                $_->rethrow;
+            }
+        };
+    if (ref $resp && %$resp) {
+        return $resp;
+    }
+}
 
 =head1 AUTHOR
 

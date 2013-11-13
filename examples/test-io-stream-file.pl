@@ -33,13 +33,6 @@ my ($st, $dir_contents_href);
 
 my $io = $api_instance->io;
 
-try {
-    $io->stream_file("$base_dir/$remote_file", stream_to_stdout => 1, limit_size => 500);
-}
-catch {
-    die $_ unless blessed $_ && $_->can('rethrow');
-    if ( $_->isa('Agave::Exceptions::InvalidArguments') ) {
-        
-    }
-}
+$io->stream_file("$base_dir/$remote_file", stream_to_stdout => 1, limit_size => 500);
+
 

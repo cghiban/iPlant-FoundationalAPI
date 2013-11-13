@@ -35,9 +35,10 @@ unless ($api_instance->token) {
 	exit 1;
 }
 
-my $base_dir = '/' . $api_instance->user;
-print "Working in [", $base_dir, "]", $/;
+my $app_id = shift;
 
+#my $base_dir = '/' . $api_instance->user;
+#print "Working in [", $base_dir, "]", $/;
 
 #-----------------------------
 # APPS
@@ -46,45 +47,55 @@ print "Working in [", $base_dir, "]", $/;
 my $ap_wc;
 $api_instance->debug(0);
 my $apps = $api_instance->apps;
-sleep 3;
-print "\n---------------------------------------------------------\n";
-print "Available applications (top 10):";
-print "\n---------------------------------------------------------\n";
-my @list = try {
-        $apps->list;
-    }
-    catch {
-        die $_ unless blessed $_ && $_->can('rethrow');
-        if ( $_->isa('Agave::Exceptions') ) {
-            warn $_->error, "\n", $_->trace->as_string, "\n";
-            warn $_->content if $_->can('content');
-            exit 1;
+
+unless ($app_id) {
+    print "\n---------------------------------------------------------\n";
+    print "Available applications (top 10):";
+    print "\n---------------------------------------------------------\n";
+    my @list = try {
+            $apps->list;
         }
-        $_->rethrow;
-    };
-@list = sort {$a->{id} cmp $b->{id}} @list;
-for my $ap (scalar @list > 10 ? @list[0..9] : @list) {
-    print "\t", $ap, "    [", $ap->shortDescription, "]\n";
+        catch {
+            die $_ unless blessed $_ && $_->can('rethrow');
+            if ( $_->isa('Agave::Exceptions') ) {
+                warn $_->error, "\n", $_->trace->as_string, "\n";
+                warn $_->content if $_->can('content');
+                exit 1;
+            }
+            $_->rethrow;
+        };
+    @list = sort {$a->{id} cmp $b->{id}} @list;
+    for my $ap (scalar @list > 10 ? @list[0..9] : @list) {
+        print "\t", $ap, "    [", $ap->shortDescription, "]\n";
+    }
+
+    exit 0;
 }
 
-sleep 3;
 print "\n---------------------------------------------------------\n";
-print "Looking for application 'wc' - Word Count:";
+print "Looking for application $app_id";
 print "\n---------------------------------------------------------\n";
 
-($ap_wc) = $apps->find_by_name("wc");
+#($ap_wc) = $apps->find_by_id($app_id);
+unless ($ap_wc) {
+    ($ap_wc) = $apps->find_by_name($app_id);
+    ($ap_wc) = $apps->find_by_id($ap_wc->id);
+}
 if ($ap_wc) {
-	print "\nFound [", $ap_wc, "] - ", lc $ap_wc->shortDescription, $/;
+	print "\nFound [", $ap_wc, "] - ", $ap_wc->name . ' | ', lc $ap_wc->shortDescription, "\n";
 	print "\tInputs: \n";
-	print "\t\t", $_->{id} for ($ap_wc->inputs);
-	print "\n\tParams: \n";
-	print "\t\t", $_->{id} for ($ap_wc->parameters);
-	print "\n";
+	print "\t\t", $_->{id}, " - ", $_->{details}->{label} for ($ap_wc->inputs);
+    if (@{$ap_wc->parameters}) {
+    	print "\n\tParams: \n";
+    	print "\t\t", $_->{id} for ($ap_wc->parameters);
+    }
+	print "\n" x 2;
 }
 else {
 	print "\t No application found with name 'wc'\n";
 }
 
+__END__
 #--------------------------
 # JOB
 #

@@ -6,6 +6,7 @@ use strict;
 use base qw/iPlant::FoundationalAPI::Base/;
 
 use iPlant::FoundationalAPI::Object::Job ();
+use Try::Tiny;
 
 use Data::Dumper;
 

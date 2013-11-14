@@ -49,7 +49,8 @@ use vars qw($VERSION);
             io => $IO_END,
             data => $DATA_END,
             apps => $APPS_END,
-            jobs => $JOBS_END,
+            #jobs => $JOBS_END,
+            job  => $JOBS_END,
         );
 
 

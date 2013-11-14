@@ -36,15 +36,15 @@ unless ($api_instance->token) {
 }
 
 my $app_id = shift;
+my $file_path = shift;
 
-#my $base_dir = '/' . $api_instance->user;
+my $base_dir = '/' . $api_instance->user;
 #print "Working in [", $base_dir, "]", $/;
 
 #-----------------------------
 # APPS
 #
 
-my $ap_wc;
 $api_instance->debug(0);
 my $apps = $api_instance->apps;
 
@@ -76,10 +76,10 @@ print "\n---------------------------------------------------------\n";
 print "Looking for application $app_id";
 print "\n---------------------------------------------------------\n";
 
-#($ap_wc) = $apps->find_by_id($app_id);
+my $ap_wc;
 unless ($ap_wc) {
     ($ap_wc) = $apps->find_by_name($app_id);
-    ($ap_wc) = $apps->find_by_id($ap_wc->id);
+    ($ap_wc) = $apps->find_by_id($ap_wc->id) if $ap_wc;
 }
 if ($ap_wc) {
 	print "\nFound [", $ap_wc, "] - ", $ap_wc->name . ' | ', lc $ap_wc->shortDescription, "\n";
@@ -92,17 +92,23 @@ if ($ap_wc) {
 	print "\n" x 2;
 }
 else {
-	print "\t No application found with name 'wc'\n";
+    warn 'x';
+	print "\t No application found with name '$app_id'\n";
+
+    exit 0;
 }
 
-__END__
 #--------------------------
 # JOB
 #
 
-#
-# XXX this file should exist in your data store (data.iplantcollaborative.org)
-my $file_name = '....';
+my $io = $api_instance->io;
+my $file_info = $io->readdir($file_path);
+unless ($file_info || 'iPlant::FoundationalAPI::Object::File' eq ref $file_info) {
+    print STDERR  "File not found: ", $file_info, $/;
+    exit 1;
+}
+#list_dir($file_info);
 
 my $job_ep = $api_instance->job;
 $job_ep->debug(0);
@@ -111,17 +117,18 @@ my $job_id = 0;
 if ($ap_wc) {
 	sleep 5;
 	print "\n---------------------------------------------------------\n";
-	print "Submitting a 'wc' job; input = ", $file_name;
+	print "Submitting a '$app_id' job; input = ", $file_path;
 	print "\n---------------------------------------------------------\n";
 
 
 	#print STDERR  Dumper($job_ep), $/;
 	my %job_arguments = (
-			jobName => 'job ' . $file_name,
-			query1 => "$base_dir/$file_name",
+			jobName => 'job ' . $file_path,
+			query1 => $file_path,
 			printLongestLine => 0,
 			archive => 1,
-			#archivePath => "$base_dir/analyses/",
+            requestedTime => '1:00:00',
+			archivePath => "/$base_dir/analyses/",
 		);
 	my $st = $job_ep->submit_job($ap_wc, %job_arguments);
 	my $job = $st->{status} eq 'success' ? $st->{data} : undef;
@@ -145,13 +152,19 @@ print "\n---------------------------------------------------------\n";
 
 $job_ep->debug(0);
 
-my $tries = 10;
+my $tries = 20;
 while ($tries--) {
 	my $j = $job_ep->job_details($job_id);
 	#print STDERR "\t", ref $j, $/;
 	#print STDERR Dumper( $j), $/ if $tries == 9;
-	print STDERR 'status: ', $j->status, $/;
-	last if $j->status =~ /^(ARCHIVING_)?FINISHED$/;
+    my $job_status = $j->status;
+	print STDERR 'status: ', $job_status, $/;
+	last if $job_status =~ /^(ARCHIVING_)?FINISHED$/;
+
+    if ($job_status eq 'FAILED') {
+        print STDERR  'message: ', $j->{message}, $/;
+        last;
+    }
 
 	sleep 30;
 }

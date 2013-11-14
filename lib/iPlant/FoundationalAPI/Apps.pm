@@ -6,6 +6,7 @@ use strict;
 use base qw/iPlant::FoundationalAPI::Base/;
 
 use iPlant::FoundationalAPI::Object::Application ();
+use Try::Tiny;
 
 =head1 NAME
 
@@ -80,7 +81,12 @@ sub find_by_id {
 	my @applications = ();
 
 	if ($app_id) {
-		my $app = $self->do_get('/' . $app_id);
+		my $app = try {
+            $self->do_get('/' . $app_id);
+        } catch {
+            return ();
+        };
+
 		if ($app && 'HASH' eq ref $app) {
 			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } ($app);
 		}

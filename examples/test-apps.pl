@@ -120,29 +120,27 @@ if ($ap_wc) {
 	print "Submitting a '$app_id' job; input = ", $file_path;
 	print "\n---------------------------------------------------------\n";
 
-
-	#print STDERR  Dumper($job_ep), $/;
-	my %job_arguments = (
-			jobName => 'job ' . $file_path,
-			query1 => $file_path,
-			printLongestLine => 0,
-			archive => 1,
+    my %job_arguments = (
+            jobName => 'job ' . int(rand(1024)),
+            query1 => $file_path,
+            archive => 1,
             requestedTime => '1:00:00',
-			archivePath => "/$base_dir/analyses/",
-		);
-	my $st = $job_ep->submit_job($ap_wc, %job_arguments);
-	my $job = $st->{status} eq 'success' ? $st->{data} : undef;
-	if ($job) {
-		$job_id = $job->id;
-	}
-	else {
-		print "\n---------------------------------------------------------\n";
-		print "Job status: ", Dumper($st);
-		print "\n---------------------------------------------------------\n";
-	}
+            #archivePath => "/$base_dir/analyses/",
+        );
+
+    my $st = $job_ep->submit_job($ap_wc, %job_arguments);
+    my $job = $st->{status} eq 'success' ? $st->{data} : undef;
+    if ($job) {
+        $job_id = $job->id;
+    }
+    else {
+        print "\n---------------------------------------------------------\n";
+        print "Job status: ", Dumper($st);
+        print "\n---------------------------------------------------------\n";
+    }
 }
 else {
-	exit 0;
+    exit 0;
 }
 
 sleep 3;
@@ -154,34 +152,16 @@ $job_ep->debug(0);
 
 my $tries = 20;
 while ($tries--) {
-	my $j = $job_ep->job_details($job_id);
-	#print STDERR "\t", ref $j, $/;
-	#print STDERR Dumper( $j), $/ if $tries == 9;
+    my $j = $job_ep->job_details($job_id);
+    #print STDERR Dumper( $j), $/ if $tries == 9;
     my $job_status = $j->status;
-	print STDERR 'status: ', $job_status, $/;
-	last if $job_status =~ /^(ARCHIVING_)?FINISHED$/;
+    print STDERR 'status: ', $job_status, $/;
+    last if $job_status =~ /^(ARCHIVING_)?FINISHED$/;
 
     if ($job_status eq 'FAILED') {
         print STDERR  'message: ', $j->{message}, $/;
         last;
     }
-
-	sleep 30;
+    sleep 30;
 }
-
-__END__
-my $job_list = $job_ep->jobs;
-#print STDERR Dumper( $st ), $/;
-for (@$job_list) {
-	print $_->{id}, "\t", $_->{name}, "\t", $_->{endTime}/1000, $/;
-}
-
-# # delete oldest job..
-# $job_id = @$job_list ? $job_list->[scalar @$job_list - 1] : undef;
-# if ($job_ep) {
-# 	$st = $job_ep->delete_job($job_id);
-# 	print STDERR  Dumper($st), $/;
-# }
-
-
 

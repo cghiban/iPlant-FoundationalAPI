@@ -97,6 +97,11 @@ sub status {
 	$self->{status};
 }
 
+sub archivePath {
+	my ($self) = @_;
+	$self->{archivePath};
+}
+
 sub is_finished {
 	$_[0]->status =~ /(?:FINISHED|KILLED|FAILED|STOPPED|ARCHIVING_FINISHED|ARCHIVING_FAILED)/;
 }

@@ -9,7 +9,7 @@ use File::HomeDir ();
 use Data::Dumper;
 
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 use vars qw($VERSION);
 
 use iPlant::FoundationalAPI::Constants ':all';
@@ -19,13 +19,8 @@ use LWP;
 # to see detailed (and I mean detailed) HTTP traffic
 #use LWP::Debug qw/+/;
 use HTTP::Request::Common qw(POST);
-# Needed to emit the curl-compatible form when DEBUG is enabled
-use URI::Escape;
 # For handling the JSON that comes back from iPlant services
 use JSON::XS;
-# Used for exporting complex data structures to text. Mainly used here 
-# for debugging. May be removed as a dependency later
-#use YAML qw(Dump);
 use MIME::Base64 qw(encode_base64);
 
 use constant kMaximumSleepSeconds => 600; # 10 min
@@ -34,7 +29,7 @@ use constant kMaximumSleepSeconds => 600; # 10 min
 
 # Never subject to configuration
 my $ZONE = 'iPlant Job Service';
-my $AGENT = "iPlantRobot/0.1 ";
+my $AGENT = "iPlantRobot/0.2 ";
 
 # Define API endpoints
 my $IO_ROOT = "io-v1";
@@ -90,6 +85,7 @@ sub do_get {
 	# Check for a request path
 	unless (defined($path)) {
 		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;
+		carp "RESTful path missing for " . $END_POINT;
 		return kExitError;
 	}
 	print STDERR  "::do_get: path: ", $path, $/ if $self->debug;
@@ -124,14 +120,13 @@ sub do_get {
 						':content_cb' => sub {my ($d)= @_; $data = $d; die();},
 					);
 		}
+
 		if ($res->is_success) {
 			return $data;
 		}
 		else {
 			print STDERR $res->status_line, "\n" if $self->debug;
-			#print STDERR $req->content, "\n" if $self->debug;
-		
-			return kExitError;
+			croak $res->status_line;
 		}
 	}
 	else {
@@ -144,23 +139,36 @@ sub do_get {
 	# Parse response
 	my $message;
 	my $mref;
-	
-	#print STDERR Dumper( $res ), $/;
-	if ($res->is_success) {
+
+	# success or we have a json resp
+	my $headers = $res->headers;
+	my $is_json = $headers->{'content-type'} =~ m'^application/json';
+	if ($res->is_success || $is_json) {
 		$message = $res->content;
 		print STDERR $message, "\n" if $self->debug;
 
 		my $json = JSON::XS->new->allow_nonref;
-		$mref = $json->decode( $message );
-		# mref in this case is an array reference
-		#_display_io_list_reference($mref->{'result'});
-		#return kExitOK;
-		return $mref->{result};
+		$mref = eval {$json->decode( $message );};
+		if ($@) {
+			print STDERR $message, "\n";
+			croak "Invalid message received!\n";
+		}
+		if (ref $mref) {
+			if ($mref->{status} eq 'success') {
+				return $mref->{result};
+			}
+			else {
+				croak $mref->{message};
+			}
+		}
+		else {
+			croak "Invalid message received!\n";
+		}
 	}
 	else {
 		print STDERR $res->status_line, "\n" if $self->debug;
 		print STDERR $req->content, "\n" if $self->debug;
-		return kExitError;
+		croak $res->status_line;
 	}
 }
 

@@ -336,7 +336,7 @@ sub _setup_user_agent {
 	my $ua = LWP::UserAgent->new;
 	
 	$ua->agent($AGENT);
-	if (($self->user ne '') and ($self->token ne '')) {
+	if (defined $self->user && $self->user ne '' && defined $self->token && $self->token ne '') {
 		if ($self->debug) {
 			print STDERR (caller(0))[3], ": Username/token authentication selected\n";
 		}

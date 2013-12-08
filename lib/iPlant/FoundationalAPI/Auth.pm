@@ -15,11 +15,11 @@ iPlant::FoundationalAPI::Auth - The great new iPlant::FoundationalAPI::Auth!
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my $TRANSPORT = 'https';
 
@@ -45,42 +45,36 @@ sub new {
 	my ($proto, $args) = @_;
 	my $class = ref($proto) || $proto;
 	
-	my $self  = { map {$_ => $args->{$_}} grep {/(?:user|token|password|hostname|lifetime|debug)/} keys %$args};
+	my $self  = { map {$_ => $args->{$_}} grep {/^(?:user|token|password|hostname|lifetime|debug)$/} keys %$args};
 	
 	bless($self, $class);
-	
-	if ($self->{user} && $self->{password} && !$self->{token}) {
-		# hit auth service for a new token
-		my $newToken = $self->auth_post_token();
-		print STDERR "Issued-Token: ", $newToken, "\n" if $self->debug;
-		$self->{token} = $newToken;
-		delete $self->{password};
-	}
-	elsif ($self->{user} && $self->{token}) {
+
+	if ($self->{user} && $self->{token}) {
 		unless ($self->is_token_valid) {
-			carp "Authentication failed...\n";
-			return;
+            # we should catch this and switch to password authentication
+            # will try to get a new token, if the password was provided
+	        delete $self->{token};
 		}
 		else {
 			print STDERR  "Token validated successfully", $/ if $self->debug;
 		}
 	}
 
+	if ($self->{user} && $self->{password} && !$self->{token}) {
+		# hit auth service for a new token
+		my $newToken = $self->auth_post_token();
+		print STDERR "Issued-Token: ", $newToken, "\n" if $self->debug;
+		$self->{token} = $newToken;
+	}
+	delete $self->{password};
+
 	return $self;
 }
-
-sub validate_auth {
-	my ($self) = @_;
-	
-	return 0;
-}
-
 
 sub auth_post_token {
 	
 	# Retrieve a token in user mode
-	my $self = shift;
-	my $renew = shift;
+	my ($self, $renew) = @_;
 
 	if ($renew && $self->{password}) {
 		print STDERR  "Revalidating token...", $/ if $self->debug;
@@ -189,7 +183,7 @@ sub is_token_valid {
 				return;
 			}
 		} else {
-			print STDERR (caller(0))[3], " ", $res->status_line, "\n";
+			print STDERR (caller(0))[3], " ", $res->status_line, "\n" if $self->debug;
 			return;
 		}
 	}

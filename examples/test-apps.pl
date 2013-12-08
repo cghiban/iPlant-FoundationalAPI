@@ -89,10 +89,9 @@ if ($ap_wc) {
     	print "\n\tParams: \n";
     	print "\t\t", $_->{id} for ($ap_wc->parameters);
     }
-	print "\n" x 2;
+	print "\n\n";
 }
 else {
-    warn 'x';
 	print "\t No application found with name '$app_id'\n";
 
     exit 0;
@@ -102,6 +101,9 @@ else {
 # JOB
 #
 
+unless (defined $file_path) {
+    exit 0;
+}
 my $io = $api_instance->io;
 my $file_info = $io->readdir($file_path);
 unless ($file_info || 'iPlant::FoundationalAPI::Object::File' eq ref $file_info) {
@@ -122,11 +124,17 @@ if ($ap_wc) {
 
     my %job_arguments = (
             jobName => 'job ' . int(rand(1024)),
-            query1 => $file_path,
             archive => 1,
             requestedTime => '1:00:00',
             #archivePath => "/$base_dir/analyses/",
         );
+
+    my ($input) = ($ap_wc->inputs)[0];
+    if ($input) {
+        $job_arguments{$input->{id}} = $file_path;
+    }
+    print STDERR Dumper( \%job_arguments), $/ 
+        if $job_ep->debug;
 
     my $st = $job_ep->submit_job($ap_wc, %job_arguments);
     my $job = $st->{status} eq 'success' ? $st->{data} : undef;
@@ -150,7 +158,7 @@ print "\n---------------------------------------------------------\n";
 
 $job_ep->debug(0);
 
-my $tries = 20;
+my $tries = 50;
 while ($tries--) {
     my $j = $job_ep->job_details($job_id);
     #print STDERR Dumper( $j), $/ if $tries == 9;
@@ -162,6 +170,6 @@ while ($tries--) {
         print STDERR  'message: ', $j->{message}, $/;
         last;
     }
-    sleep 30;
+    sleep 15;
 }
 

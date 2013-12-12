@@ -15,17 +15,17 @@ unless (defined $remote_file) {
     die "Usage: $0 <remote_file>\n";
 }
 
-# this will read the configs from the ~/.iplant.foundationalapi.json file:
+# this will read the configs from the ~/.iplant.foundationalapi.v2.json file:
 #	conf file content: 
-#		{"user":"iplant_username", "password":"iplant_password", "token":"iplant_token"}
-my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu');
-$api_instance->debug(0);
+#		{"user":"iplant_username", "password":"iplant_password", "ckey":"", "csecret":"", "token":""}
+
+my $api_instance = iPlant::FoundationalAPI->new(debug => 0);
 
 unless ($api_instance->token) {
 	print STDERR "Can't authenticate!" , $/;
 	exit 1;
 }
-#print STDERR "Token: ", $api_instance->token, "\n";
+print "Token: ", $api_instance->token, "\n" if $api_instance->debug;
 
 my $base_dir = '/' . $api_instance->user;
 print STDERR "Working in [", $base_dir, "]", $/;

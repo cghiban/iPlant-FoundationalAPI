@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use strict;
+use common::sense;
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";

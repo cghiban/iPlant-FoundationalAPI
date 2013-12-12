@@ -14,11 +14,11 @@ iPlant::FoundationalAPI::Auth - The great new iPlant::FoundationalAPI::Auth!
 
 =head1 VERSION
 
-Version 0.2.1
+Version 0.2.2
 
 =cut
 
-our $VERSION = '0.2.1';
+our $VERSION = '0.2.2';
 
 my $TRANSPORT = 'https';
 
@@ -44,12 +44,12 @@ sub new {
 	my ($proto, $args) = @_;
 	my $class = ref($proto) || $proto;
 	
-	my $self  = { map {$_ => $args->{$_}} grep {/^(?:user|token|password|hostname|lifetime|debug)$/} keys %$args};
+	my $self  = { map {$_ => $args->{$_}} grep {/^(?:user|token|password|hostname|lifetime|csecret|ckey|debug)$/} keys %$args};
 	
 	bless($self, $class);
 
 	if ($self->{user} && $self->{token}) {
-		unless ($self->is_token_valid) {
+        unless ($self->is_token_valid) {
             # we should catch this and switch to password authentication
             # will try to get a new token, if the password was provided
 	        delete $self->{token};
@@ -75,45 +75,41 @@ sub _auth_post_token {
 	# Retrieve a token in user mode
 	my ($self, $renew) = @_;
 
-	if ($renew && $self->{password}) {
-		print STDERR  "Revalidating token...", $/ if $self->debug;
-	}
+    #if ($renew && $self->{password}) {
+    #	print STDERR  "Revalidating token...", $/ if $self->debug;
+    #}
 
 	my $ua = $self->_setup_user_agent;
-	$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->password) );
+	$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->{ckey}, $self->{csecret}) );
 	
 	my $auth_ep = $self->_get_end_point;
-	my $url = "https://" . $self->hostname . "/$auth_ep/";
+	my $url = "https://" . $self->hostname . "/$auth_ep";
 
-	my $content = [];
+	my $content = {
+            scope => 'PRODUCTION',
+            grant_type => 'client_credentials',
+            username => $self->user,
+            password => $self->password,
+        };
 
-	if ($renew) {
-		$url .= "renew";
-		push @$content, token => $self->token;
-	}
+    #if ($renew) {
+    #	$url .= "renew";
+    #	push @$content, token => $self->token;
+    #}
 
 	if ($self->{lifetime}) {
-		push @$content, lifetime => $self->{lifetime};
+		$content->{expires_in} = $self->{lifetime};
 	}
 	
 	print STDERR  '..::Auth::_auth_post_token: ', $url, $/ if $self->debug;
 
-# 	my $req = HTTP::Request->new(POST => $url);
-# 	if (@$content) {
-# 		print STDERR Dumper( \$content), $/ if $self->debug;
-# 		print STDERR  "FIXME: see how to submit params.. at ", __LINE__, $/;
-# 		$req->content($content);
-# 	}
-# 	my $res = $ua->request($req);
-
 	my $res = $ua->post( $url, $content);
 	
-	my $message;
 	my $mref;
+	my $message = $res->content;
 	my $json = JSON->new->allow_nonref;
 
     if ($res->is_success) {
-        $message = $res->content;
         $mref = try {
                 $json->decode( $message );
             }
@@ -123,16 +119,17 @@ sub _auth_post_token {
             };
 
 		if ($mref) {
-			if ($mref->{status} eq 'success' && defined($mref->{'result'}->{'token'})) {
-				$self->{token_expires} = $mref->{'result'}->{expires};
-				return $mref->{'result'}->{'token'};
+			if (defined($mref->{access_token}) && defined $mref->{expires_in} ) {
+				$self->{access_token} = $mref->{access_token};
+				$self->{token_expires} = $mref->{expires_in};
+				$self->{token_type} = $mref->{token_type};
+				return $mref->{'access_token'};
 			}
 			else {
-				print STDERR  $mref->{'status'}, ": ", $mref->{'message'}, $/;
-                Agave::Exceptions::AuthFailed->throw($mref->{message});
+				print STDERR  $mref->{'status'} || $mref->{error}, ": ", $mref->{'message'} || $mref->{error_description}, $/;
+                Agave::Exceptions::AuthFailed->throw($mref->{message} || $mref->{error_description});
 			}
-		} else {
-        }
+		} else {}
 	} else {
 		print STDERR (caller(0))[3], " ", $res->status_line, "\n";
         Agave::Exceptions::HTTPError->throw(
@@ -144,7 +141,7 @@ sub _auth_post_token {
 
 }
 
-=head2 is_token_valid
+=head2 is_token_valid - not working in v2
 
   Checks if the token has expired or not.
   It returns the # of seconds till the expiration of the token.
@@ -155,13 +152,15 @@ sub _auth_post_token {
 
 sub is_token_valid {
 	my ($self) = shift;
+
+    return 0;
 	
 	unless ($self->token_expiration) {
 		my $ua = $self->_setup_user_agent;
 		$ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->token) );
 	
 		my $auth_ep = $self->_get_end_point;
-		my $url = "https://" . $self->hostname . "/$auth_ep/";
+		my $url = "https://" . $self->hostname . "/$auth_ep";
 
 		print STDERR  '..::Auth::is_token_valid: ', $url, $/ if $self->debug;
 
@@ -221,26 +220,13 @@ sub _encode_credentials {
 	encode_base64("$u:$p");
 }
 
-
-=head2 function2
-
-=cut
-
-sub function2 {
-}
-
 =head1 AUTHOR
 
-Cornel Ghiban, C<< <ghiban at cshl.edu> >>
+Cornel Ghiban, C<< <cghiban at gmail.com> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-iplant-foundationalapi at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=iPlant-FoundationalAPI>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
+Please report any bugs or feature requests to the above email address.
 
 =head1 SUPPORT
 
@@ -253,31 +239,19 @@ You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=iPlant-FoundationalAPI>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/iPlant-FoundationalAPI>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/iPlant-FoundationalAPI>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/iPlant-FoundationalAPI/>
+http://agaveapi.co/
 
 =back
 
 
 =head1 ACKNOWLEDGEMENTS
 
+iPlant, DNALC, TACC, CSHL
+
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2011 Cornel Ghiban.
+Copyright 2013 Cornel Ghiban.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published

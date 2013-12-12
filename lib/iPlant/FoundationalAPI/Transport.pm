@@ -30,11 +30,11 @@ use vars qw($VERSION);
     my $AGENT = "DNALCRobot/$VERSION";
 
     # Define API endpoints
-    my $IO_ROOT = "v2/files";
+    my $IO_ROOT = "files/2.0";
     my $IO_END = "$IO_ROOT";
 
-    my $AUTH_ROOT = "v2/auth";
-    my $AUTH_END = $AUTH_ROOT;
+    #my $AUTH_ROOT = "v2/auth";
+    my $AUTH_END = "token";
 
     my $DATA_ROOT = "data-v1";
     my $DATA_END = "$DATA_ROOT/data";
@@ -346,7 +346,7 @@ use vars qw($VERSION);
             if ($self->debug) {
                 print STDERR (caller(0))[3], ": Username/token authentication selected\n";
             }
-            $ua->default_header( Authorization => 'Basic ' . _encode_credentials($self->user, $self->token) );
+            $ua->default_header( Authorization => 'Bearer ' . $self->token );
         } else {
             if ($self->debug) {
                 print STDERR (caller(0))[3], ": Sending no authentication information\n";

@@ -24,31 +24,30 @@ if (0) {
 	}
 
 	my $api_instance = iPlant::FoundationalAPI->new(
-			hostname => 'iplant-dev.tacc.utexas.edu',
+			hostname => 'agave.iplantc.org',
+            ckey => '...',
+            csecret => '...',
 			user => $ENV{IPLANT_USERNAME},
 			token => $ENV{IPLANT_TOKEN},
 			debug => 1,
 			password => $ENV{IPLANT_PASSWORD},
 		);
-
 }
 ## or
 
-# this will read the configs from the ~/.iplant.foundationalapi.json file:
+# this will read the configs from the ~/.iplant.foundationalapi.v2.json file:
 #	conf file content: 
-#		{"user":"iplant_username", "password":"iplant_password", "token":"iplant_token"}
+#		{"user":"iplant_username", "password":"iplant_password", "ckey":"", "csecret":"", "token":""}
 #		# set either the password or the token
 
 #my $api_instance = iPlant::FoundationalAPI->new(debug => 1);
-
-my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 0);
-#$api_instance->debug(1);
+my $api_instance = iPlant::FoundationalAPI->new(debug => 0);
 
 unless ($api_instance->token) {
     warn "\nError: Authentication failed!\n";
     exit 1;
 }
-print "Token: ", $api_instance->token, "\n";
+print "Token: ", $api_instance->token, "\n" if $api_instance->debug;
 
 my $base_dir = '/' . $api_instance->user;
 print "Working in [", $base_dir, "]", $/;
@@ -69,6 +68,7 @@ my ($st, $dir_contents_href);
     #print STDERR Dumper( $dir_contents_href), $/;
 	list_dir($dir_contents_href);
 
+exit 0;
 	my $new_dir = 'Agave_API_test_' . rand(1000);
 	my $new_dir_renamed = $new_dir;
 	$new_dir_renamed =~ s/Agave_API_test/API_renamed_test/;

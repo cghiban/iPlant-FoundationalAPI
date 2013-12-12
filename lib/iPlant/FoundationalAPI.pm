@@ -18,7 +18,7 @@ our $VERSION = '0.01';
 use base 'iPlant::FoundationalAPI::Base';
 
 use iPlant::FoundationalAPI::IO ();
-use iPlant::FoundationalAPI::Data ();
+#use iPlant::FoundationalAPI::Data ();
 use iPlant::FoundationalAPI::Apps ();
 use iPlant::FoundationalAPI::Auth ();
 use iPlant::FoundationalAPI::Job ();
@@ -45,7 +45,7 @@ Perhaps a little code snippet.
 
 =cut
 
-my @config_files = qw(/etc/iplant.foundationalapi.json ~/.iplant.foundationalapi.json ~/Library/Preferences/iplant.foundationalapi.json ./iplant.foundationalapi.json );
+my @config_files = qw(/etc/iplant.foundationalapi.v2.json ~/.iplant.foundationalapi.v2.json ~/Library/Preferences/iplant.foundationalapi.v2.json ./iplant.foundationalapi.v2.json );
 
 =head2 new
 
@@ -58,18 +58,20 @@ sub new {
 	my $class = ref($proto) || $proto;
 	
 	my $self  = {
-			hostname => delete $args{hostname} || 'foundation.iplantcollaborative.org',
-			iplanthome => '/iplant/home/',
-			processors => 1,
-			run_time => '01:00:00',
-			user => $args{user} || '',
-			password => $args{password} || '',
-			token => $args{token} || '',
-			credential_class => $args{credential_class} || 'self',
-			auth => undef,
-			lifetime => defined $args{lifetime} ? delete $args{lifetime} : undef,
-			debug => defined $args{debug} ? delete $args{debug} : undef,
-		};
+            hostname => delete $args{hostname} || 'agave.iplantc.org',
+            iplanthome => '/iplant/home/',
+            processors => 1,
+            run_time => '01:00:00',
+            csecret => $args{csecret} || '',
+            ckey => $args{ckey} || '',
+            user => $args{user} || '',
+            password => $args{password} || '',
+            token => $args{token} || '',
+            credential_class => $args{credential_class} || 'self',
+            lifetime => defined $args{lifetime} ? delete $args{lifetime} : undef,
+            auth => undef,
+            debug => defined $args{debug} ? delete $args{debug} : undef,
+        };
 	
 	$self = _auto_config($self) unless %args;
 	

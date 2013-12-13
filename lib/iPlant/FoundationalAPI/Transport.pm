@@ -80,11 +80,9 @@ sub do_get {
 		print STDERR "::do_get: invalid request: ", $self, $/;
 		return kExitError;
 	}
-	#print $END_POINT, $/;
 	
 	# Check for a request path
 	unless (defined($path)) {
-		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;
 		carp "RESTful path missing for " . $END_POINT;
 		return kExitError;
 	}
@@ -181,14 +179,13 @@ sub do_put {
 		print STDERR  "Invalid request. ", $/;
 		return kExitError;
 	}
-	#print $END_POINT, $/;
 	
 	# Check for a request path
 	unless (defined($path)) {
 		print STDERR "Please specify a RESTful path using for ", $END_POINT, $/;
 		return kExitError;
 	}
-	#print STDERR  "Path: ", $path, $/;
+	print STDERR  "Path: ", $path, $/ if $self->debug;
 
 	print STDERR '::do_put: ', Dumper( \%params), $/ if $self->debug;
 	my $content = '';
@@ -197,7 +194,6 @@ sub do_put {
 	}
 
 	my $ua = _setup_user_agent($self);
-	#print STDERR Dumper( $ua), $/;
 	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	my $req = HTTP::Request->new(PUT => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
 	$req->content($content) if $content;
@@ -207,12 +203,9 @@ sub do_put {
 	my $message;
 	my $mref;
 	
-	#print STDERR Dumper( $res ), $/;
 	if ($res->is_success) {
 		$message = $res->content;
-		if ($self->debug) {
-			print STDERR $message, "\n";
-		}
+		print STDERR $message, "\n" if $self->debug;
 		my $json = JSON::XS->new->allow_nonref;
 		$mref = eval {$json->decode( $message );};
 		#return kExitOK;
@@ -264,7 +257,7 @@ sub do_delete {
 	}
 	else {
 		print STDERR $res->status_line, "\n";
-		print STDERR $res->content, $/ if $self->debug;
+		print STDERR $res->content, "\n";
 		return kExitError;
 	}
 }
@@ -315,10 +308,9 @@ sub do_post {
 		return $mref;
 	}
 	else {
-		#print STDERR Dumper( $res ), $/;
-		print STDERR "Status line: ", (caller(0))[3], " ", $res->status_line, "\n";
+		print STDERR "Status line: ", (caller(0))[3], " ", $res->status_line, "\n" if $self->debug;
 		my $content = $res->content;
-		print STDERR "Content: ", $content, $/;
+		print STDERR "Content: ", $content, $/ if $self->debug;
 		if ($content =~ /"status":/) {
 			$mref = eval {$json->decode( $content );};
 			if ($mref && $mref->{status}) {

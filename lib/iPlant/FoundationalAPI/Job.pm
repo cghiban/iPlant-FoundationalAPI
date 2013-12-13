@@ -76,7 +76,7 @@ sub submit_job {
 			processors => delete $params{processors} || 1,
 			memory => delete $params{memory} || '',
 			archive => delete $params{archive} || 'false',
-			#archivePath => '/' . $self->user . '/analyses/',
+			archivePath => delete $params{archivePath} || undef,
 			callbackUrl => delete $params{callbackUrl} || undef,
 		);
 

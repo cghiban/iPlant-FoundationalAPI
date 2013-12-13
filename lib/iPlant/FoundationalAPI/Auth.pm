@@ -99,14 +99,6 @@ sub auth_post_token {
 	
 	print STDERR  '..::Auth::auth_post_token: ', $url, $/ if $self->debug;
 
-# 	my $req = HTTP::Request->new(POST => $url);
-# 	if (@$content) {
-# 		print STDERR Dumper( \$content), $/ if $self->debug;
-# 		print STDERR  "FIXME: see how to submit params.. at ", __LINE__, $/;
-# 		$req->content($content);
-# 	}
-# 	my $res = $ua->request($req);
-
 	my $res = $ua->post( $url, $content);
 	
 	my $message;
@@ -189,7 +181,7 @@ sub is_token_valid {
 	}
 
 	my $delta = $self->token_expiration - time();
-	print STDERR "DELTA is_token_valid: ", $delta, $/;
+	print STDERR "DELTA is_token_valid: ", $delta, $/ if $self->debug;
 
 	return $delta > 0 ? $delta : 0;
 }

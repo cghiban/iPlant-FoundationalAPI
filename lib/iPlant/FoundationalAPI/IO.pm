@@ -55,7 +55,7 @@ sub readdir {
 
 	# Check for a request path
 	unless (defined($path)) {
-		print STDERR "Please specify a path for which you want contents retrieved\n";
+		print STDERR "Please specify a path for which you want contents retrieved\n" if $self->debug;
 		return;
 	}
 
@@ -85,7 +85,7 @@ sub mkdir {
 
 	# Check for a request path
 	unless (defined($path)) {
-		print STDERR "Please specify a path for which you want contents retrieved\n";
+		print STDERR "Please specify a path for which you want contents retrieved\n" if $self->debug;
 		return;
 	}
 
@@ -102,7 +102,7 @@ sub remove {
 
 	# Check for a request path
 	unless (defined($path)) {
-		print STDERR "::IO::remove - Please specify the path you want removed\n";
+		print STDERR "::IO::remove - Please specify the path you want removed\n" if $self->debug;
 		return;
 	}
 
@@ -119,18 +119,18 @@ sub rename {
 
 	# Check for the requested path to be renamed
 	unless (defined($path)) {
-		print STDERR "::IO::rename Please specify a path which you want renamed\n";
+		print STDERR "::IO::rename Please specify a path which you want renamed\n" if $self->debug;
 		return;
 	}
 
 	# Check for a request path
 	unless ($new_name) {
-		print STDERR "::IO::rename Please specify a new name\n";
+		print STDERR "::IO::rename Please specify a new name\n" if $self->debug;
 		return;
 	}
 
 	my $st = $self->do_put($path, action => 'rename', newName => uri_escape($new_name));
-	print STDERR 'rename status: ', Dumper( $st), $/ if $self->debug;;
+	print STDERR 'rename status: ', Dumper( $st), $/ if $self->debug;
 	#if ($st == -1) {
 	#	return undef;
 	#}
@@ -145,7 +145,7 @@ sub rename {
 sub move {
 	my ($self, $src, $dest) = @_;
 
-	print STDERR  "::IO::move: Not implemented", $/;
+	print STDERR  "::IO::move: Not implemented", $/  if $self->debug;
 }
 
 =head2 stream_file
@@ -160,7 +160,6 @@ sub move {
 sub stream_file {
 	my ($self, $path, %params) = @_;
 
-	#print STDERR  "::IO::stream_file: Not implemented", $/;
 	# Check for the requested path to be renamed
 	unless (defined($path)) {
 		print STDERR "::IO::stream_file Please specify a path which you want renamed\n";
@@ -258,7 +257,7 @@ sub share {
 			}
 		}
 	}
-	print STDERR  'permissions to set: ', join (', ', keys %p), $/ if $debug;
+	print STDERR  'permissions to set: ', join (', ', keys %p), $/ if $self->debug;
 
 	return $self->_error("IO::share: nothing to share. ") unless ($path && $ipc_user && %p);
 

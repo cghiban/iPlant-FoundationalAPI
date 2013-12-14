@@ -7,6 +7,8 @@ use lib "$Bin/../lib";
 use iPlant::FoundationalAPI ();
 
 use Scalar::Util qw( blessed );
+use Try::Tiny;
+use Data::Dumper;
 
 my $remote_file = shift;
 
@@ -25,15 +27,23 @@ unless ($api_instance->token) {
 	print STDERR "Can't authenticate!" , $/;
 	exit 1;
 }
-#print STDERR "Token: ", $api_instance->token, "\n";
-
-my $base_dir = '/' . $api_instance->user;
-print STDERR "Working in [", $base_dir, "]", $/;
 
 my ($st, $dir_contents_href);
 
 my $io = $api_instance->io;
 
-$io->stream_file("$base_dir/$remote_file", stream_to_stdout => 1, limit_size => 500);
+# in case of an error, we can get it in catch() or in $st;
+my $st = try {
+        $io->stream_file($remote_file, stream_to_stdout => 1);
+    }
+    catch {
+        #print STDERR Dumper( $_), $/;
+        if (ref($_) && $_->isa('Agave::Exceptions::HTTPError')) {
+            warn "Error: ", $_->code . "\n" . $_->content, "\n";
+        }
+        else {
+            warn $_;
+        }
+    };
 
-
+warn '$st = ', Dumper( $st ), $/ if 'HASH' eq ref($st);

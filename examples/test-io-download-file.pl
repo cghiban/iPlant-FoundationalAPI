@@ -27,18 +27,26 @@ unless ($api_instance->token) {
 }
 print "Token: ", $api_instance->token, "\n" if $api_instance->debug;
 
-my $base_dir = '/' . $api_instance->user;
-print STDERR "Working in [", $base_dir, "]", $/;
-
 my ($st, $dir_contents_href);
 
 my $io = $api_instance->io;
+
+my $finfo = eval {$io->ls($remote_file);};
+if ($@) {
+    warn "Error: ", $@, ": $remote_file\n";
+    exit(1);
+}
+
+if (!$finfo || 1 != @$finfo || !$finfo->[0]->is_file ) {
+    print STDERR "Not a regular file: ", Dumper($finfo->[0]), $/;
+    exit(1);
+}
 
 my $local_file = "/tmp/" . basename($remote_file);
 if (-f $local_file) {
     unlink $local_file or do {die "Can't remove existing file: " . $local_file;}
 }
-$io->stream_file("$base_dir/$remote_file", save_to => $local_file);
+$io->stream_file($remote_file, save_to => $local_file);
 
 if (-f $local_file) {
     print "Stored remote file to ", $local_file, ", size = ", -s $local_file, " bytes", $/;

@@ -88,13 +88,13 @@ sub format {
 
 sub is_file {
 	my ($self) = @_;
-	return $self->type eq 'file';
+	return $self->type eq 'file' && $self->format ne 'folder';
 }
 
 
 sub is_folder {
 	my ($self) = @_;
-	return $self->type eq 'dir';
+	return $self->type eq 'dir' || $self->format eq 'folder';
 }
 
 sub last_modified {

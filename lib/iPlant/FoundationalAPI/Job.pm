@@ -128,9 +128,27 @@ sub job_details {
 }
 
 sub job_output_files {
-	my ($self, $job_id) = @_;
+    my ($self, $job_id, $subpath) = @_;
 
-	$self->do_get('/' . $job_id . '/output/list');
+    my $path = '/' . $job_id . '/output/list';
+    if ($subpath) {
+        $subpath .= '/' unless $subpath =~ m|^/|;
+        $path .= $subpath;
+    }
+    $self->do_get($path);
+}
+
+sub job_output_file {
+    my ($self, $job_id, $path) = @_;
+
+    my $fpath = '/' . $job_id . '/output';
+    unless ($path) {
+        return;
+    }
+    $path .= '/' unless $path =~ m|^/|;
+    $fpath .= $path;
+    
+    $self->do_get($fpath);
 }
 
 =head2 jobs

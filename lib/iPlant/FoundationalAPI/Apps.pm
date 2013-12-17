@@ -86,7 +86,7 @@ sub find_by_id {
 
 	if ($app_id) {
 		my $app = $self->do_get('/' . $app_id);
-		if ($ != kExitError && 'HASH' eq ref $app) {
+		if ($app && 'HASH' eq ref $app) {
 			push @applications, map { new iPlant::FoundationalAPI::Object::Application($_) } ($app);
 		}
 	}

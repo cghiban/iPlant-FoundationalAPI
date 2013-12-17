@@ -46,7 +46,7 @@ Perhaps a little code snippet.
 
 =cut
 
-my @config_files = qw(/etc/iplant.foundationalapi.json ~/.iplant.foundationalapi.json ~/Library/Preferences/iplant.foundationalapi.json ./iplant.foundationalapi.json );
+my @config_files = qw(./iplant.foundationalapi.json ~/.iplant.foundationalapi.json ~/Library/Preferences/iplant.foundationalapi.json /etc/iplant.foundationalapi.json);
 
 =head2 new
 

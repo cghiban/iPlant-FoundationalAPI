@@ -13,7 +13,7 @@ Version 0.01
 
 use overload '""' => sub { $_[0]->id; };
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -95,6 +95,11 @@ sub parameters {
 sub status {
 	my ($self) = @_;
 	$self->{status};
+}
+
+sub archive {
+	my ($self) = @_;
+	$self->{archive};
 }
 
 sub is_finished {

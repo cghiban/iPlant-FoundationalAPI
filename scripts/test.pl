@@ -8,6 +8,7 @@ use lib "$Bin/../lib";
 use iPlant::FoundationalAPI::Constants ':all';
 use iPlant::FoundationalAPI ();
 use Data::Dumper; 
+use Carp;
 
 sub list_dir {
 	my ($dir_contents) = @_;
@@ -85,7 +86,7 @@ if (1) {
 		exit -1;
 	}
 
-	$dir_contents_href = $io->readdir($base_dir), $/;
+	$dir_contents_href = $io->readdir($base_dir);
 	#print STDERR Dumper( $dir_contents_href), $/;
 	list_dir($dir_contents_href);
 
@@ -99,12 +100,11 @@ if (1) {
 
 	sleep 3;
 	print "---------------------------------------------------------\n";
-	$dir_contents_href = $io->readdir($base_dir), $/;
+	$dir_contents_href = $io->readdir($base_dir);
 	list_dir($dir_contents_href);
 
 	sleep 5;
 }
-
 
 #-----------------------------
 # DATA
@@ -197,7 +197,7 @@ print "\n---------------------------------------------------------\n";
 
 $job_ep->debug(0);
 
-my $tries = 10;
+my $tries = 20;
 while ($tries--) {
 	my $j = $job_ep->job_details($job_id);
 	#print STDERR "\t", ref $j, $/;
@@ -207,6 +207,20 @@ while ($tries--) {
 
 	sleep 30;
 }
+
+print "---------------------------------------------------------\n";
+print "\t** Removing the new file, ", $new_file_name, $/;
+$st = $io->remove($base_dir . '/' . $new_file_name);
+my $finfo = eval { $io->ls($base_dir . '/' . $new_file_name); };
+if (my $err = $@) {
+    $err =~ s/\s+at .+ line \d+.*//;
+    warn "Got error while trying to get info about file $new_file_name:\n\t", $err, $/;
+}
+if ($finfo && @$finfo) {
+    print STDERR "File removal failed: ", Dumper( $finfo), $/;
+}
+list_dir($finfo);
+
 
 __END__
 my $job_list = $job_ep->jobs;

@@ -1,7 +1,7 @@
 package iPlant::FoundationalAPI::IO;
 
-#use warnings;
-#use strict;
+use warnings;
+use strict;
 use Carp;
 use HTTP::Request::Common qw(POST);
 use URI::Escape;
@@ -60,7 +60,7 @@ sub readdir {
 	}
 
 	my $list = $self->do_get('/list' . $path);
-	return @$list ? [map {iPlant::FoundationalAPI::Object::File->new($_)} @$list] : [];
+	return (ref $list && @$list) ? [map {iPlant::FoundationalAPI::Object::File->new($_)} @$list] : [];
 }
 
 =head2 ls

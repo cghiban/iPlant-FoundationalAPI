@@ -39,8 +39,8 @@ use vars qw($VERSION);
     my $DATA_ROOT = "data-v1";
     my $DATA_END = "$DATA_ROOT/data";
 
-    my $APPS_END = "v2/apps";
-    my $JOBS_END = "v2/jobs";
+    my $APPS_END = "apps/2.0";
+    my $JOBS_END = "jobs/2.0";
 
     my $TRANSPORT = 'https';
 

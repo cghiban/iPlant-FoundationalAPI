@@ -17,6 +17,7 @@ To get submit an app:
 
 	perl examples/test-apps.pl <app-id|app-name> <file from data store>
     perl examples/test-apps.pl wca-1.00 /ghiban/Bx_51.fa
+	perl examples/test-apps.pl wc /ghiban/numbers.txt
 
 To check on a job's status:
 

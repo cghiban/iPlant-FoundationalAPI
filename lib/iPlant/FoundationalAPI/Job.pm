@@ -145,7 +145,7 @@ sub job_output_files {
 sub jobs {
 	my ($self) = @_;
 
-	my $list = $self->do_get('s/list');
+	my $list = $self->do_get('/');
 	return @$list ? [map {iPlant::FoundationalAPI::Object::Job->new($_)} @$list] : [];
 }
 

@@ -70,15 +70,18 @@ sub submit_job {
 	}
 
 	my %post_content = (
-			softwareName => $application->id,
-			jobName => delete $params{jobName} || 'Job for ' . $application->id,
-			requestedTime => delete $params{requestedTime} || '0:10:00',
-			processors => delete $params{processors} || 1,
+			appId => $application->id,
+			name => delete $params{name} || delete $params{jobName} || 'Job for ' . $application->id,
+			maxRunTime => delete $params{maxRunTime} || delete $params{requestedTime} || '01:00:00',
+			nodeCount => delete $params{nodeCount} || delete $params{processors} || 1,
+			processorsPerNode => delete $params{processorsPerNode} || delete $params{processorsPerNode} || 1,
 			memory => delete $params{memory} || '',
-			archive => delete $params{archive} || 'false',
-			#archivePath => '/' . $self->user . '/analyses/',
-			callbackUrl => delete $params{callbackUrl} || undef,
 		);
+
+    for my $option (qw(notifications archive archivePath memoryPerNode)) {
+        $post_content{ $option } = delete $params{ $option } 
+            if (defined $params{ $option });
+    }
 
 	for my $opt_group (qw/inputs outputs parameters/) {
 		for my $opt ($application->$opt_group) {

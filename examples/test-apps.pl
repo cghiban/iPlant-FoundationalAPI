@@ -27,7 +27,7 @@ sub list_dir {
 
 # see examples/test-io.pl for another way to do auth
 #
-my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 0);
+my $api_instance = iPlant::FoundationalAPI->new(debug => 0);
 #$api_instance->debug(0);
 
 unless ($api_instance->token) {
@@ -113,7 +113,7 @@ unless ($file_info || 'iPlant::FoundationalAPI::Object::File' eq ref $file_info)
 #list_dir($file_info);
 
 my $job_ep = $api_instance->job;
-$job_ep->debug(0);
+$job_ep->debug(1);
 
 my $job_id = 0;
 if ($ap_wc) {
@@ -122,11 +122,11 @@ if ($ap_wc) {
 	print "Submitting a '$app_id' job; input = ", $file_path;
 	print "\n---------------------------------------------------------\n";
 
+    # for all the job options see documentation
+    #  at http://agaveapi.co/job-management/
     my %job_arguments = (
-            jobName => 'job ' . int(rand(1024)),
-            archive => 1,
-            requestedTime => '1:00:00',
-            #archivePath => "/$base_dir/analyses/",
+            name => 'job ' . int(rand(1024)),
+            archive => 'true',
         );
 
     my ($input) = ($ap_wc->inputs)[0];
@@ -158,18 +158,19 @@ print "\n---------------------------------------------------------\n";
 
 $job_ep->debug(0);
 
-my $tries = 50;
-while ($tries--) {
+my $tries = 0;
+while ($tries++ < 50) {
     my $j = $job_ep->job_details($job_id);
     #print STDERR Dumper( $j), $/ if $tries == 9;
     my $job_status = $j->status;
     print STDERR 'status: ', $job_status, $/;
-    last if $job_status =~ /^(ARCHIVING_)?FINISHED$/;
+    last if $job_status eq 'ARCHIVING_FINISHED' && $j->{archive};
+    last if $job_status eq 'FINISHED' && !$j->{archive};
 
-    if ($job_status eq 'FAILED') {
+    if ($job_status =~ m/FAILED$/) {
         print STDERR  'message: ', $j->{message}, $/;
         last;
     }
-    sleep 15;
+    sleep 15 + $tries;
 }
 

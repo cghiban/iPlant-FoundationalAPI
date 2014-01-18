@@ -27,7 +27,7 @@ sub list_dir {
 
 # see examples/test-io.pl for another way to do auth
 #
-my $api_instance = iPlant::FoundationalAPI->new(hostname => 'iplant-dev.tacc.utexas.edu', debug => 0);
+my $api_instance = iPlant::FoundationalAPI->new(debug => 0);
 #$api_instance->debug(0);
 
 unless ($api_instance->token) {
@@ -57,9 +57,10 @@ my $job_ep = $api_instance->job;
 $job_ep->debug(0);
 
 if ($job_id) {
-    my $tries = 20;
-    while ($tries--) {
+    my $tries = 0;
+    while ($tries++ < 50) {
         my $j = $job_ep->job_details($job_id);
+        #print STDERR Dumper( $j ), $/;
         my $job_status = $j->status;
         print STDERR 'status: ', $job_status, $/;
         if ($job_status =~ /^(ARCHIVING_)?FINISHED$/) {
@@ -76,12 +77,12 @@ if ($job_id) {
         #    print STDERR Dumper( $j ), $/;
         #}
 
-        if ($job_status eq 'FAILED') {
+        if ($job_status =~ /(?:FAILED|KILLED|PAUSED)$/) {
             print STDERR  'message: ', $j->{message}, $/;
             last;
         }
 
-        sleep 30;
+        sleep 30 + $tries;
     }
 
     exit 0;

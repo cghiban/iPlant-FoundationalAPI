@@ -45,7 +45,12 @@ Perhaps a little code snippet.
 
 =cut
 
-my @config_files = qw(/etc/iplant.foundationalapi.v2.json ~/.iplant.foundationalapi.v2.json ~/Library/Preferences/iplant.foundationalapi.v2.json ./iplant.foundationalapi.v2.json );
+my @config_files = qw(
+   ./iplant.foundationalapi.v2.json
+   ~/.iplant.foundationalapi.v2.json 
+   ~/Library/Preferences/iplant.foundationalapi.v2.json
+   /etc/iplant.foundationalapi.v2.json
+);
 
 =head2 new
 
@@ -73,7 +78,8 @@ sub new {
             debug => defined $args{debug} ? delete $args{debug} : undef,
         };
 	
-	$self = _auto_config($self) unless %args;
+    my $config_file = defined $args{config_file} ? delete $args{config_file} : undef;
+    $self = _auto_config($self, $config_file) unless %args;
 	
 	if ($self->{user} && ($self->{token} || $self->{password})) {
 		_init_auth($self);
@@ -88,15 +94,20 @@ sub new {
 
 sub _auto_config {
 	
-	# Load config file from various paths
+	# Try loading config from various paths
 	# to populate user, password, token, host, processors, runtime, and so on
 
-	my $self = shift;
+	my ($self, $config_file) = @_;
 	
-	# Values in subsequent files over-ride earlier values
-	foreach my $c (@config_files) {
+	my $json = JSON::XS->new->allow_nonref;	
+	my $home_dir = File::HomeDir->home;
+
+    my (@cfiles) = defined $config_file && -f $config_file 
+                    ? ($config_file) 
+                    : @config_files;
+
+	foreach my $c (@cfiles) {
 		if ($c =~ /^~/) {
-			my $home_dir = File::HomeDir->home;
 			$c =~ s/^~/$home_dir/;
 		}
 		
@@ -104,7 +115,6 @@ sub _auto_config {
 			open(CONFIG, $c);
 			my $contents = do { local $/;  <CONFIG> };
 			if (defined($contents)) {
-				my $json = JSON::XS->new->allow_nonref;	
 				my $mref = $json->decode( $contents );
 				
 				foreach my $option (keys %{ $mref }) {
@@ -112,6 +122,7 @@ sub _auto_config {
 				}
 			}
 			close CONFIG;
+            last;
 		}
 	}
 	

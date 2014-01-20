@@ -68,7 +68,6 @@ my ($st, $dir_contents_href);
     #print STDERR Dumper( $dir_contents_href), $/;
 	list_dir($dir_contents_href);
 
-exit 0;
 	my $new_dir = 'Agave_API_test_' . rand(1000);
 	my $new_dir_renamed = $new_dir;
 	$new_dir_renamed =~ s/Agave_API_test/API_renamed_test/;

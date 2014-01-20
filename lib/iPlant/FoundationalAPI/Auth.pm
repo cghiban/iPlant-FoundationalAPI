@@ -44,7 +44,7 @@ sub new {
 	my ($proto, $args) = @_;
 	my $class = ref($proto) || $proto;
 	
-	my $self  = { map {$_ => $args->{$_}} grep {/^(?:user|token|password|hostname|lifetime|csecret|ckey|debug)$/} keys %$args};
+	my $self  = { map {$_ => $args->{$_}} grep {/^(?:user|token|password|hostname|lifetime|csecret|ckey|http_timeout|debug)$/} keys %$args};
 	
 	bless($self, $class);
 

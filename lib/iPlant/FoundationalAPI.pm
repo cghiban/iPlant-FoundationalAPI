@@ -74,6 +74,7 @@ sub new {
             token => $args{token} || '',
             credential_class => $args{credential_class} || 'self',
             lifetime => defined $args{lifetime} ? delete $args{lifetime} : undef,
+            http_timeout => defined $args{http_timeout} ? delete $args{http_timeout} : undef,
             auth => undef,
             debug => defined $args{debug} ? delete $args{debug} : undef,
         };

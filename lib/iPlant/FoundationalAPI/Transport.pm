@@ -25,6 +25,8 @@ use vars qw($VERSION);
 {
     # these should be moved to a config file (or not?)
 
+    my $TIMEOUT = 60;
+
     # Never subject to configuration
     my $ZONE = 'iPlant Job Service';
     my $AGENT = "DNALCRobot/$VERSION";
@@ -152,6 +154,17 @@ use vars qw($VERSION);
                     content => $res->content,
                 );
             };
+
+            # check for API errors
+            my $fault = $mref->{fault};
+            if ($mref && $fault) {
+                Agave::Exceptions::HTTPError->throw(
+                    code => $fault->{code},
+                    message => ($fault->{type} . ' ' . $fault->{message}) || 'do_get: error',
+                    content => $message,
+                );              
+            }
+
             if ($mref && $mref->{status} eq 'success') {
                 return $mref->{result};
             }
@@ -342,6 +355,7 @@ use vars qw($VERSION);
         my $ua = LWP::UserAgent->new;
 
         $ua->agent($AGENT);
+        $ua->timeout( $self->{http_timeout} || $TIMEOUT);
         if (($self->user ne '') && $self->token) {
             if ($self->debug) {
                 print STDERR (caller(0))[3], ": Username/token authentication selected\n";

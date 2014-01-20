@@ -31,7 +31,7 @@ SKIP: {
     skip "Create the t/agave-auth.json file for tests to run", 2
         unless (-f $conf_file);
 
-    my $api = iPlant::FoundationalAPI->new( config_file => $conf_file);
+    my $api = iPlant::FoundationalAPI->new( config_file => $conf_file, http_timeout => 40);
 
     ok( defined $api, "API object created");
     ok( defined $api->token, "Authentication succeeded" );
@@ -41,7 +41,10 @@ SKIP: {
 
     # read users directory 
     my $base_dir = '/' . $api->user;
-	my $dir_data = $io->readdir($base_dir);
+	my $dir_data = eval {$io->readdir($base_dir);};
+    if (my $err = $@) {
+        diag(ref $err ? $err->message . "\n" . $err->content : $err);
+    }
     ok( defined $dir_data, "Received IO response");
     ok( 'ARRAY' eq ref $dir_data, "IO response is valid");
     ok( @$dir_data > 0, "We have at least one file/dir");

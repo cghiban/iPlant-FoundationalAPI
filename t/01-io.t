@@ -2,7 +2,8 @@
 
 use Test::More;
 
-plan tests => 11;
+my $TNUM = 11;
+plan tests => $TNUM;
 
 use FindBin;
 use iPlant::FoundationalAPI ();
@@ -28,13 +29,17 @@ EOF
 unless (-f $conf_file);
 
 SKIP: {
-    skip "Create the t/agave-auth.json file for tests to run", 2
+    skip "Create the t/agave-auth.json file for tests to run", $TNUM
         unless (-f $conf_file);
 
     my $api = iPlant::FoundationalAPI->new( config_file => $conf_file, http_timeout => 40);
 
     ok( defined $api, "API object created");
     ok( defined $api->token, "Authentication succeeded" );
+
+    unless ($api && $api->token) {
+        skip "Auth failed. No reason to continue..", $TNUM - 2;
+    }
 
     my $io = $api->io;
     ok( defined $io, "IO endpoint successfully created");

@@ -2,7 +2,7 @@
 
 use Test::More;
 
-plan tests => 10;
+plan tests => 11;
 
 use FindBin;
 use iPlant::FoundationalAPI ();
@@ -51,13 +51,13 @@ SKIP: {
 
     # First file is the directory itself
     my $dir = $$dir_data[0];
-    ok( ref($dir) =~ /::Object::File$/, "We received a File object");
-    ok( $dir->name eq '.', "We received the user directory");
-
+    ok( $dir && ref($dir), "We received an object");
+    ok( $dir->isa('iPlant::FoundationalAPI::Object::File'),  "We received the right kind of object");
+    is( $dir->name, '.', "We received the user's directory");
 
 	my $new_dir = '000-automated-test-' . rand(1000);
 	my $st = $io->mkdir($base_dir, $new_dir);
-    ok( $st->{status} eq 'success', "Directory created successfully");
+    is( $st->{status}, 'success', "Directory created successfully");
     diag("Directory not removed: " . $st->{message})
         unless( $st->{status} eq 'success' );
 

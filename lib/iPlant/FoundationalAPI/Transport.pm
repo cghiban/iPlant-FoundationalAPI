@@ -13,12 +13,12 @@ our $VERSION = '0.12';
 use vars qw($VERSION);
 
 use iPlant::FoundationalAPI::Constants ':all';
-    
 use LWP;
 # Emit verbose HTTP traffic logs to STDERR. Uncomment
 # to see detailed (and I mean detailed) HTTP traffic
 #use LWP::Debug qw/+/;
-use HTTP::Request::Common qw(POST);
+#use HTTP::Request::Common qw(POST);
+
 # For handling the JSON that comes back from iPlant services
 use JSON::XS;
 use MIME::Base64 qw(encode_base64);
@@ -87,6 +87,7 @@ sub do_get {
 		return kExitError;
 	}
 	print STDERR  "::do_get: path: ", $path, $/ if $self->debug;
+	$self->log( type => 'request', method => 'GET', path => $path);
 
 	my $ua = _setup_user_agent($self);
 	my ($req, $res);
@@ -119,6 +120,9 @@ sub do_get {
 					);
 		}
 
+		$self->log( type => 'response', method => 'GET', 
+			path => $path, code => $res->code,);
+
 		if ($res->is_success) {
 			return $data;
 		}
@@ -145,6 +149,9 @@ sub do_get {
 		$message = $res->content;
 		print STDERR $message, "\n" if $self->debug;
 
+		$self->log( type => 'response', method => 'GET', path => $path, 
+			code => $res->code, content => $message);
+
 		my $json = JSON::XS->new->allow_nonref;
 		$mref = eval {$json->decode( $message );};
 		if ($@) {
@@ -164,6 +171,8 @@ sub do_get {
 		}
 	}
 	else {
+		$self->log( type => 'response', method => 'GET', path => $path, 
+			code => $res->code, content => $res->content);
 		print STDERR $res->status_line, "\n" if $self->debug;
 		print STDERR $req->content, "\n" if $self->debug;
 		croak $res->status_line;
@@ -193,6 +202,9 @@ sub do_put {
 		$content .= "$k=$v&";
 	}
 
+	my $log_path = $path . '?' . $content;
+	$self->log( type => 'request', method => 'PUT', path => $log_path);
+
 	my $ua = _setup_user_agent($self);
 	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" if $self->debug;
 	my $req = HTTP::Request->new(PUT => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
@@ -201,20 +213,23 @@ sub do_put {
 	
 	# Parse response
 	my $message;
-	my $mref;
+	my $rc;
 	
 	if ($res->is_success) {
 		$message = $res->content;
 		print STDERR $message, "\n" if $self->debug;
 		my $json = JSON::XS->new->allow_nonref;
-		$mref = eval {$json->decode( $message );};
-		#return kExitOK;
-		return $mref;
+		$rc = eval {$json->decode( $message );};
 	}
 	else {
-		print STDERR $res->status_line, "\n";
-		return kExitError;
+		print STDERR 'PUT response: ', $res->status_line, "\n" if $self->debug;
+		$rc = kExitError;
 	}
+
+	$self->log( type => 'response', method => 'PUT', path => $log_path, 
+		code => $res->code, content => $res->content);
+
+	return $rc;
 }
 
 sub do_delete {
@@ -234,6 +249,14 @@ sub do_delete {
 	}
 	print STDERR  "DELETE Path: ", $path, $/ if $self->debug;
 
+	my $user = $self->user;
+	if ($user =~ m|$path/*$|) {
+		print STDERR  "Can't remove user's directory. Given path = $path", $/;
+		return kExitError
+	}
+
+	$self->log( type => 'request', method => 'DELETE', path => $path);
+
 	my $ua = _setup_user_agent($self);
 	my $req = HTTP::Request->new(DELETE => "$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path);
 	my $res = $ua->request($req);
@@ -242,24 +265,30 @@ sub do_delete {
 	
 	# Parse response
 	my $message;
-	my $mref;
+	my $rc;
 	
 	if ($res->is_success) {
 		$message = $res->content;
 		print STDERR $message, "\n" if $self->debug;
 
 		my $json = JSON::XS->new->allow_nonref;
-		$mref = eval { $json->decode( $message ); };
+		my $mref = eval { $json->decode( $message ); };
 		if ($mref && $mref->{status} eq 'success') {
-			return 1;
+			$rc = 1;
 		}
-		return $mref;
+		else {
+			$rc = $mref;
+		}
 	}
 	else {
 		print STDERR $res->status_line, "\n";
 		print STDERR $res->content, "\n";
-		return kExitError;
+		$rc = kExitError;
 	}
+	
+	$self->log( type => 'response', method => 'DELETE', path => $path, 
+		code => $res->code, content => $res->content);
+	return $rc;
 }
 
 
@@ -281,6 +310,8 @@ sub do_post {
 
 	$path =~ s'/$'';
 
+	$self->log( type => 'request', method => 'POST', path => $path, params => \%params);
+
 	print STDERR '::do_post: ', Dumper( \%params), $/ if $self->debug;
 	print STDERR "\n$TRANSPORT://" . $self->hostname . "/" . $END_POINT . $path, "\n" 
 		if $self->debug;
@@ -301,6 +332,10 @@ sub do_post {
 		if ($self->debug) {
 			print STDERR '::do_post content: ', $message, "\n";
 		}
+
+		$self->log( type => 'response', method => 'POST', path => $path, 
+			code => $res->code, content => $message);
+
 		$mref = eval {$json->decode( $message );};
 		if ($mref && $mref->{status} eq 'success') {
 			return $mref->{result};
@@ -310,6 +345,10 @@ sub do_post {
 	else {
 		print STDERR "Status line: ", (caller(0))[3], " ", $res->status_line, "\n" if $self->debug;
 		my $content = $res->content;
+
+		$self->log( type => 'response', method => 'POST', path => $path, 
+			code => $res->code, content => $content);
+
 		print STDERR "Content: ", $content, $/ if $self->debug;
 		if ($content =~ /"status":/) {
 			$mref = eval {$json->decode( $content );};
@@ -356,6 +395,38 @@ sub debug {
 	my $self = shift;
 	if (@_) { $self->{debug} = shift }
 	return $self->{debug};
+}
+
+sub logger {
+	my $self = shift;
+	if (@_) { $self->{logger} = shift }
+	return $self->{logger};
+}
+
+sub log {
+	my $self = shift;
+	my %args = @_;
+
+	return unless $self->{logger};
+	return unless keys %args;
+
+	my %params = (
+		user => $self->{user} || 'no_user',
+		end_point => $self->_get_end_point || 'no_ep',
+	);
+	$params{$_} = $args{$_} for (keys %args);
+	if (exists $params{content} && defined $params{content}) {
+		$params{content} = substr($params{content}, 0, 8_000);
+	}
+
+	#print STDERR Dumper( \%params ), $/;
+
+	# we don't care about if this suceeds, for now..
+	eval {
+		$self->{logger}->can('log') 
+			? $self->{logger}->log(\%params)
+			: $self->{logger}->send(\%params);
+	};
 }
 
 

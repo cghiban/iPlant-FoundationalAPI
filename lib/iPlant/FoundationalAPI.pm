@@ -70,6 +70,7 @@ sub new {
 			auth => undef,
 			lifetime => defined $args{lifetime} ? delete $args{lifetime} : undef,
 			debug => defined $args{debug} ? delete $args{debug} : undef,
+			logger => defined $args{logger} ? delete $args{logger} : undef,
 		};
 	
 	$self = _auto_config($self) unless %args;

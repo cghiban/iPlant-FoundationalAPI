@@ -4,6 +4,8 @@ package iPlant::FoundationalAPI::Base;
 use strict;
 use warnings;
 
+use Digest::MD5 'md5_hex';
+
 use base 'iPlant::FoundationalAPI::Transport';
 
 
@@ -14,6 +16,11 @@ sub new {
 	my $self  = { map {$_ => $args->{$_}} keys %$args};
 	
 	bless($self, $class);
+
+    if ($self->{logger} && $self->token) {
+        my $session = md5_hex($self->token);
+        $self->{logger}->session($session);
+    }
 	return $self;
 }
 

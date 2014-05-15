@@ -106,6 +106,12 @@ sub remove {
 		return;
 	}
 
+	my $user = $self->user;
+	if ($path =~ m/$user\/*$/) {
+		print STDERR  "Can't remove user's directory. Given path = [$path]", $/;
+		return kExitError
+	}
+
 	return $self->do_delete($path);
 }
 

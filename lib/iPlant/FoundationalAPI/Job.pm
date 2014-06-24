@@ -127,6 +127,7 @@ sub job_details {
 	return $data;
 }
 
+
 sub job_output_files {
     my ($self, $job_id, $subpath) = @_;
 
@@ -188,6 +189,55 @@ sub input {
 }
 
 
+=head2 share_job
+
+=cut
+
+sub share_job {
+	my ($self, $job_id, $username, $perm) = @_;
+
+    $perm ||= "read";
+    return unless ($job_id && $username);
+
+    my $path = join("/", "", $job_id, "share", $username);
+
+    return unless $perm =~ /^(?:read|write)$/;
+
+    $self->do_post($path, permission => $perm);
+}
+
+=head2 stop_job
+
+=cut
+
+sub stop_job {
+	my ($self, $job_id) = @_;
+
+    return unless ($job_id);
+
+    my $path = "/$job_id";
+
+    my $rc = $self->do_post($path, "action" => "stop");
+}
+
+
+sub stdout {
+    my ($self, $job_id) = @_;
+
+    return unless ($job_id);
+
+    my $path = '/' . $job_id . '/output/ipc.stdout';
+    $self->do_get($path);
+}
+
+sub stderr {
+    my ($self, $job_id) = @_;
+
+    return unless ($job_id);
+
+    my $path = '/' . $job_id . '/output/ipc.stderr';
+    $self->do_get($path);
+}
 
 =head1 AUTHOR
 
